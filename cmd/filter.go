@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"gtmcdc"
+	pkg "gtmcdc"
 	"os"
 )
 
@@ -20,10 +20,21 @@ func main() {
 	f, _ := os.OpenFile("/home/lee/Projects/git/ydbtests/repl_procedures/B/filter.log", os.O_RDONLY, 0600)
 	defer f.Close()
 
+	pkg.NewCDCProducer([]string{"localhost:9092"})
+	defer pkg.CleanupProducer()
+
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
 		fmt.Println(line)
-		gtmcdc.Parse(line)
+		rec, err := pkg.Parse(line)
+		if err != nil {
+			log.Info("Unable to parse record %s", line)
+		} else {
+			err = pkg.PublishMessage("cdc-test", rec.Json())
+			if err != nil {
+				log.Warnf("Unable to publish message for journal record %s", line)
+			}
+		}
 	}
 }
