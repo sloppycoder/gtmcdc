@@ -1,6 +1,7 @@
 package gtmcdc
 
 import (
+	"encoding/json"
 	"errors"
 	log "github.com/sirupsen/logrus"
 	"strconv"
@@ -8,22 +9,22 @@ import (
 	"time"
 )
 
-const (
-	NULL    = "00"
-	PINI    = "01"
-	PFIN    = "02"
-	EOF     = "03"
-	KILL    = "04"
-	SET     = "05"
-	ZTSTART = "06"
-	ZTCOM   = "07"
-	TSTART  = "08"
-	TCOM    = "09"
-	ZKILL   = "10"
-	ZTWORM  = "11"
-	ZTRIG   = "12"
-	LGTRIG  = "13"
-)
+var OpCodes = map[string]string{
+	"00": "NULL",
+	"01": "PINI",
+	"02": "PFIN",
+	"03": "EOF",
+	"04": "KILL",
+	"05": "SET",
+	"06": "ZTSTART",
+	"07": "ZTCOM",
+	"08": "TSTART",
+	"09": "TCOM",
+	"10": "ZKILL",
+	"11": "ZTWORM",
+	"12": "ZTRIG",
+	"13": "LGTRIG",
+}
 
 const (
 	ErrorNotHorologFormat = "input is not horolog time format"
@@ -62,6 +63,12 @@ type JournalRecord struct {
 	detail Expr
 }
 
+type JournalEvent struct {
+	Operand string `json:"operand",ommitifempty`
+	Node    string `json:"node",ommitifempty`
+	Value   string `json:"value",ommitifempty`
+}
+
 //
 // parse a GT.M journal extract text string into JournalRecord
 //
@@ -77,7 +84,7 @@ func Parse(raw string) (*JournalRecord, error) {
 	}
 
 	rec := JournalRecord{
-		opcode: s[0],
+		opcode: OpCodes[s[0]],
 		header: Header{},
 		repl:   Repl{},
 		tran:   Transaction{},
@@ -86,21 +93,27 @@ func Parse(raw string) (*JournalRecord, error) {
 
 	rec.header.pid = s[2]
 	rec.header.timestamp = ts
-	if s[0] == PINI && len(s) >= 8 {
+
+	if OpCodes[s[0]] == "PINI" && len(s) >= 8 {
 		rec.header.clientPid = s[7]
 	} else {
 		rec.header.clientPid = s[4]
 	}
 
 	switch rec.opcode {
-	case SET, KILL, TCOM, ZTRIG:
+	case "SET", "KILL", "TCOM", "ZTRIG":
 		rec.tran.tokenSeq, rec.tran.updateNum = s[5], s[8]
 		rec.repl.streamNum, rec.repl.streamSeq = s[6], s[7]
 
 		s2 := strings.Split(s[len(s)-1], "=")
 		rec.detail.nodeFlags = s2[0]
 		if len(s2) > 1 {
-			rec.detail.value = s2[1]
+			val := s2[1]
+			// remove leading and end double quote characters
+			if len(val) >= 2 && val[0] == '"' && val[len(val)-1] == '"' {
+				val = val[1 : len(val)-1]
+			}
+			rec.detail.value = val
 		}
 		break
 
@@ -109,6 +122,21 @@ func Parse(raw string) (*JournalRecord, error) {
 	}
 
 	return &rec, nil
+}
+
+func (rec *JournalRecord) Json() string {
+	event := JournalEvent{
+		Operand: rec.opcode,
+		Node:    rec.detail.nodeFlags,
+		Value:   rec.detail.value,
+	}
+
+	bytes, err := json.Marshal(&event)
+	if err != nil {
+		return ""
+	}
+
+	return string(string(bytes))
 }
 
 // parse a timestamp in GT.M $HOROLOG format, ddddd,sssss format and return a time.Time
