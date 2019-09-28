@@ -1,0 +1,11 @@
+*.bak
+*.log
+*.so
+*.*~
+*.iml
+*.swp
+*.gz
+
+# binaries
+gtmcdc
+
