@@ -1,3 +1,4 @@
+.idea/
 *.bak
 *.log
 *.so
@@ -7,5 +8,4 @@
 *.gz
 
 # binaries
-gtmcdc
-
+filter
