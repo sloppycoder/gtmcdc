@@ -14,37 +14,7 @@ import (
 //
 // the main processing loop that reads journal extract and publish messages
 //
-func doFilter(input, output, brokers, topic string, useKafka bool) {
-	var fin, fout *os.File
-	var err error
-
-	// the primary reason for this read input from file logic is that
-	// in my Goland IDE there's no way to redirect STDIN and STDOUT
-	// in Run configuration, so I couldn't debug the code without this.
-
-	if input != "" {
-		fin, err = os.OpenFile(input, os.O_RDONLY, 0666)
-		if err != nil {
-			log.Fatalf("Unable to input file %s", input)
-		} else {
-			log.Debugf("Input file: %s", input)
-		}
-		defer fin.Close()
-	} else {
-		fin = os.Stdin
-	}
-
-	if output != "" {
-		fout, err = os.OpenFile(output, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			log.Fatalf("Unable to output file %s", output)
-		} else {
-			log.Debugf("Output file: %s", output)
-		}
-		defer fout.Close()
-	} else {
-		fout = os.Stdout
-	}
+func doFilter(fin, fout *os.File, brokers, topic string, useKafka bool) {
 
 	if useKafka {
 		brokerList := strings.Split(brokers, ",")
@@ -107,7 +77,7 @@ func initLogging(logFile string) {
 
 func main() {
 	var inputFile, outputFile, logFile, brokers, topic string
-	var useKafka bool
+	var noKafka bool
 	var promHttpAddr string
 
 	flag.StringVar(&inputFile, "i", "", "input file, default to STDIN")
@@ -115,7 +85,7 @@ func main() {
 	flag.StringVar(&logFile, "log", "filter.log", "log file, default to filter.log")
 	flag.StringVar(&brokers, "brokers", "localhost:9092", "Kafka broker list, default to localhost:9092")
 	flag.StringVar(&topic, "topic", "cdc-test", "Kafka topic to publish events to, default to cdc-test")
-	flag.BoolVar(&useKafka, "kafka", false, "Enable publishing to Kafa, defaults to false")
+	flag.BoolVar(&noKafka, "nokafka", false, "Enable publishing to Kafka, defaults to false")
 	flag.StringVar(&promHttpAddr, "prom", "127.0.0.1:10101",
 		`expose metrics on this address to be scraped by Prometheus, 
 defaults to 127.0.0.1:101010. specify off to disable the HTTP listener`)
@@ -123,12 +93,45 @@ defaults to 127.0.0.1:101010. specify off to disable the HTTP listener`)
 	flag.Parse()
 
 	initLogging(logFile)
-	log.Infof("filter started with i=%s, o=%s, log=%s, brokers=%s, topic=%s, kafka=%t, prom=%s",
-		inputFile, outputFile, logFile, brokers, topic, useKafka, promHttpAddr)
+	log.Infof("filter started with i=%s, o=%s, log=%s, brokers=%s, topic=%s, nokafka=%t, prom=%s",
+		inputFile, outputFile, logFile, brokers, topic, noKafka, promHttpAddr)
 
 	if promHttpAddr != "off" {
 		pkg.InitPromHttp(promHttpAddr)
 	}
 
-	doFilter(inputFile, outputFile, brokers, topic, useKafka)
+	// initialize input and output files for this filter
+
+	var fin, fout *os.File
+	var err error
+
+	// the primary reason for this read input from file logic is that
+	// in my Goland IDE there's no way to redirect STDIN and STDOUT
+	// in Run configuration, so I couldn't debug the code without this.
+
+	if inputFile != "" {
+		fin, err = os.OpenFile(inputFile, os.O_RDONLY, 0666)
+		if err != nil {
+			log.Fatalf("Unable to input file %s", inputFile)
+		} else {
+			log.Debugf("Input file: %s", inputFile)
+		}
+		defer fin.Close()
+	} else {
+		fin = os.Stdin
+	}
+
+	if outputFile != "" {
+		fout, err = os.OpenFile(outputFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			log.Fatalf("Unable to output file %s", outputFile)
+		} else {
+			log.Debugf("Output file: %s", outputFile)
+		}
+		defer fout.Close()
+	} else {
+		fout = os.Stdout
+	}
+
+	doFilter(fin, fout, brokers, topic, !noKafka)
 }
