@@ -10,6 +10,7 @@ var cdcProducer sarama.SyncProducer
 
 func CleanupProducer() {
 	if cdcProducer != nil {
+		log.Debug("cleanup producer")
 		cdcProducer.Close()
 	}
 }

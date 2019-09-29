@@ -8,6 +8,7 @@ import (
 	pkg "gtmcdc"
 	"os"
 	"strings"
+	"time"
 )
 
 //
@@ -54,14 +55,25 @@ func doFilter(input, output, brokers, topic string, useKafka bool) {
 	scanner := bufio.NewScanner(fin)
 	for scanner.Scan() {
 		line := scanner.Text()
+		pkg.IncrCounter("lines_read_from_input")
+
 		rec, err := pkg.Parse(line)
 		if err != nil {
 			log.Info("Unable to parse record %s", line)
+			pkg.IncrCounter("lines_parse_error")
 		} else {
+			pkg.IncrCounter("lines_parsed")
 			if useKafka {
+				start := time.Now()
 				err = pkg.PublishMessage(topic, rec.Json())
+
 				if err != nil {
 					log.Warnf("Unable to publish message for journal record %s", line)
+					pkg.IncrCounter("lines_parsed_but_not_published")
+				} else {
+					pkg.IncrCounter("lines_parsed_and_published")
+					elapsed := time.Since(start)
+					pkg.HistoObserve("message_publish_to_kafka", float64(elapsed/time.Microsecond))
 				}
 			}
 			// send to output only after a message is successfully published
@@ -96,6 +108,7 @@ func initLogging(logFile string) {
 func main() {
 	var inputFile, outputFile, logFile, brokers, topic string
 	var useKafka bool
+	var promHttpAddr string
 
 	flag.StringVar(&inputFile, "i", "", "input file, default to STDIN")
 	flag.StringVar(&outputFile, "o", "", "output file, default to STDOUT")
@@ -103,11 +116,19 @@ func main() {
 	flag.StringVar(&brokers, "brokers", "localhost:9092", "Kafka broker list, default to localhost:9092")
 	flag.StringVar(&topic, "topic", "cdc-test", "Kafka topic to publish events to, default to cdc-test")
 	flag.BoolVar(&useKafka, "kafka", false, "Enable publishing to Kafa, defaults to false")
+	flag.StringVar(&promHttpAddr, "prom", "127.0.0.1:10101",
+		`expose metrics on this address to be scraped by Prometheus, 
+defaults to 127.0.0.1:101010. specify off to disable the HTTP listener`)
+
 	flag.Parse()
 
 	initLogging(logFile)
-	log.Infof("filter started with i=%s, o=%s, log=%s, brokers=%s, topic=%s, kafka=%t",
-		inputFile, outputFile, logFile, brokers, topic, useKafka)
+	log.Infof("filter started with i=%s, o=%s, log=%s, brokers=%s, topic=%s, kafka=%t, prom=%s",
+		inputFile, outputFile, logFile, brokers, topic, useKafka, promHttpAddr)
+
+	if promHttpAddr != "off" {
+		pkg.InitPromHttp(promHttpAddr)
+	}
 
 	doFilter(inputFile, outputFile, brokers, topic, useKafka)
 }
