@@ -88,13 +88,14 @@ func main() {
 
 	flag.StringVar(&inputFile, "i", "", "input file, default to STDIN")
 	flag.StringVar(&outputFile, "o", "", "output file, default to STDOUT")
-	flag.StringVar(&logFile, "log", "filter.log", "log file, default to filter.log")
-	flag.StringVar(&logLevel, "loglevel", "info", "log level, default to info")
-	flag.StringVar(&brokers, "brokers", "localhost:9092", "Kafka broker list, default to localhost:9092")
-	flag.StringVar(&topic, "topic", "cdc-test", "Kafka topic to publish events to, default to cdc-test")
+	flag.StringVar(&logFile, "log", "filter.log", "log file")
+	flag.StringVar(&logLevel, "loglevel", "info", "log level")
+	flag.StringVar(&brokers, "brokers", "localhost:9092", "Kafka broker list")
+	flag.StringVar(&topic, "topic", "cdc-test", "Kafka topic to publish events to")
 	flag.StringVar(&promHttpAddr, "prom", "127.0.0.1:10101",
 		`expose metrics on this address to be scraped by Prometheus, 
-defaults to 127.0.0.1:101010. specify off to disable the HTTP listener`)
+specify "off" to disable the HTTP listener
+`)
 	// this is for developer use only
 	flag.BoolVar(&devMode, "dev", false, "Developer mode, internal use only.")
 
