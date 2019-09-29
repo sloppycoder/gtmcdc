@@ -33,6 +33,7 @@ func doFilter(fin, fout *os.File, brokers, topic string, useKafka bool) {
 			pkg.IncrCounter("lines_parse_error")
 		} else {
 			pkg.IncrCounter("lines_parsed")
+
 			if useKafka {
 				start := time.Now()
 				err = pkg.PublishMessage(topic, rec.Json())
@@ -46,8 +47,14 @@ func doFilter(fin, fout *os.File, brokers, topic string, useKafka bool) {
 					pkg.HistoObserve("message_publish_to_kafka", float64(elapsed/time.Microsecond))
 				}
 			}
+
 			// send to output only after a message is successfully published
-			fmt.Fprintln(fout, line)
+			_, err = fmt.Fprintln(fout, line)
+			if err != nil {
+				pkg.IncrCounter("lines_output_write_error")
+			} else {
+				pkg.IncrCounter("lines_output_written")
+			}
 		}
 	}
 }
@@ -69,10 +76,11 @@ func doFilter(fin, fout *os.File, brokers, topic string, useKafka bool) {
 func initLogging(logFile string) {
 	file, err := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "can't open log file for write.")
+		_, _ = fmt.Fprintln(os.Stderr, "can't open log file for write.")
 		os.Exit(1)
 	}
 	log.SetOutput(file)
+	log.SetLevel(log.DebugLevel)
 }
 
 func main() {

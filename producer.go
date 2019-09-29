@@ -11,13 +11,13 @@ var cdcProducer sarama.SyncProducer
 func CleanupProducer() {
 	if cdcProducer != nil {
 		log.Debug("cleanup producer")
-		cdcProducer.Close()
+		_ = cdcProducer.Close()
 	}
 }
 
 func PublishMessage(topic, message string) error {
 	if cdcProducer == nil {
-		return errors.New("Producer not inialized")
+		return errors.New("producer not inialized")
 	}
 
 	_, _, err := cdcProducer.SendMessage(&sarama.ProducerMessage{

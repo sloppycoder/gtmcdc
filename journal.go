@@ -64,9 +64,9 @@ type JournalRecord struct {
 }
 
 type JournalEvent struct {
-	Operand string `json:"operand",ommitifempty`
-	Node    string `json:"node",ommitifempty`
-	Value   string `json:"value",ommitifempty`
+	Operand string `json:"operand,omitempty"`
+	Node    string `json:"node,omitempty"`
+	Value   string `json:"value,omitempty"`
 }
 
 //
@@ -136,7 +136,7 @@ func (rec *JournalRecord) Json() string {
 		return ""
 	}
 
-	return string(string(bytes))
+	return string(bytes)
 }
 
 // parse a timestamp in GT.M $HOROLOG format, ddddd,sssss format and return a time.Time
