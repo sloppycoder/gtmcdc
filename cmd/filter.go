@@ -14,12 +14,14 @@ import (
 //
 // the main processing loop that reads journal extract and publish messages
 //
-func doFilter(fin, fout *os.File, brokers, topic string, useKafka bool) {
+func doFilter(fin, fout *os.File, brokers, topic string) {
+	useKafka := false
 
-	if useKafka {
-		brokerList := strings.Split(brokers, ",")
+	brokerList := strings.Split(brokers, ",")
+	if len(brokerList) >= 1 && brokerList[0] != "off" {
 		pkg.NewCDCProducer(brokerList)
 		defer pkg.CleanupProducer()
+		useKafka = true
 	}
 
 	scanner := bufio.NewScanner(fin)
@@ -34,10 +36,13 @@ func doFilter(fin, fout *os.File, brokers, topic string, useKafka bool) {
 		} else {
 			pkg.IncrCounter("lines_parsed")
 
+			jstr := rec.Json()
+			log.Debugf("line parsed to json |%s|=>|%s|", line, jstr)
+
 			if useKafka {
 				start := time.Now()
-				err = pkg.PublishMessage(topic, rec.Json())
 
+				err = pkg.PublishMessage(topic, jstr)
 				if err != nil {
 					log.Warnf("Unable to publish message for journal record %s", line)
 					pkg.IncrCounter("lines_parsed_but_not_published")
@@ -52,6 +57,7 @@ func doFilter(fin, fout *os.File, brokers, topic string, useKafka bool) {
 			_, err = fmt.Fprintln(fout, line)
 			if err != nil {
 				pkg.IncrCounter("lines_output_write_error")
+				log.Infof("Unable to write to output")
 			} else {
 				pkg.IncrCounter("lines_output_written")
 			}
@@ -59,58 +65,58 @@ func doFilter(fin, fout *os.File, brokers, topic string, useKafka bool) {
 	}
 }
 
-//  DO NOT DELETE, will be restored later when configuration becomes more complex
-//
-// 	"github.com/olebedev/config"
-// func readConfig(configFile string) *config.Config {
-//	f, err := ioutil.ReadFile(configFile)
-//	if err != nil {
-//		log.Fatalf("Unable to read config file %s", configFile)
-//	}
-//	yamlString := string(f)
-//
-//	conf, err := config.ParseYaml(yamlString)
-//	return conf
-//}
-
-func initLogging(logFile string) {
+func initLogging(logFile, logLevel string) {
 	file, err := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "can't open log file for write.")
 		os.Exit(1)
 	}
 	log.SetOutput(file)
-	log.SetLevel(log.DebugLevel)
+
+	level, err := log.ParseLevel(logLevel)
+	if err != nil {
+		level = log.InfoLevel
+		log.Warnf("invalid loglevel %s, defaults to info")
+	}
+
+	log.SetLevel(level)
 }
 
 func main() {
-	var inputFile, outputFile, logFile, brokers, topic string
-	var noKafka bool
-	var promHttpAddr string
+	var inputFile, outputFile, logFile, logLevel, brokers, topic, promHttpAddr string
+	var devMode bool
 
 	flag.StringVar(&inputFile, "i", "", "input file, default to STDIN")
 	flag.StringVar(&outputFile, "o", "", "output file, default to STDOUT")
 	flag.StringVar(&logFile, "log", "filter.log", "log file, default to filter.log")
+	flag.StringVar(&logLevel, "loglevel", "info", "log level, default to info")
 	flag.StringVar(&brokers, "brokers", "localhost:9092", "Kafka broker list, default to localhost:9092")
 	flag.StringVar(&topic, "topic", "cdc-test", "Kafka topic to publish events to, default to cdc-test")
-	flag.BoolVar(&noKafka, "nokafka", false, "Enable publishing to Kafka, defaults to false")
 	flag.StringVar(&promHttpAddr, "prom", "127.0.0.1:10101",
 		`expose metrics on this address to be scraped by Prometheus, 
 defaults to 127.0.0.1:101010. specify off to disable the HTTP listener`)
+	// this is for developer use only
+	flag.BoolVar(&devMode, "dev", false, "Developer mode, internal use only.")
 
 	flag.Parse()
 
-	initLogging(logFile)
-	log.Infof("filter started with i=%s, o=%s, log=%s, brokers=%s, topic=%s, nokafka=%t, prom=%s",
-		inputFile, outputFile, logFile, brokers, topic, noKafka, promHttpAddr)
+	if devMode {
+		brokers = "off"
+		promHttpAddr = "off"
+		logLevel = "debug"
+	}
+
+	initLogging(logFile, logLevel)
+	log.Infof("filter started with i=%s, o=%s, log=%s, brokers=%s, topic=%s, prom=%s",
+		inputFile, outputFile, logFile, brokers, topic, promHttpAddr)
 
 	if promHttpAddr != "off" {
 		pkg.InitPromHttp(promHttpAddr)
 	}
 
 	// initialize input and output files for this filter
-
-	var fin, fout *os.File
+	fin := os.Stdin
+	fout := os.Stdout
 	var err error
 
 	// the primary reason for this read input from file logic is that
@@ -125,8 +131,6 @@ defaults to 127.0.0.1:101010. specify off to disable the HTTP listener`)
 			log.Debugf("Input file: %s", inputFile)
 		}
 		defer fin.Close()
-	} else {
-		fin = os.Stdin
 	}
 
 	if outputFile != "" {
@@ -137,9 +141,9 @@ defaults to 127.0.0.1:101010. specify off to disable the HTTP listener`)
 			log.Debugf("Output file: %s", outputFile)
 		}
 		defer fout.Close()
-	} else {
-		fout = os.Stdout
 	}
 
-	doFilter(fin, fout, brokers, topic, !noKafka)
+	doFilter(fin, fout, brokers, topic)
+
+	log.Error("doFilter returned, should have happened")
 }
