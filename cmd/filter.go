@@ -89,7 +89,7 @@ func main() {
 	flag.StringVar(&inputFile, "i", "", "input file, default to STDIN")
 	flag.StringVar(&outputFile, "o", "", "output file, default to STDOUT")
 	flag.StringVar(&logFile, "log", "filter.log", "log file")
-	flag.StringVar(&logLevel, "loglevel", "info", "log level")
+	flag.StringVar(&logLevel, "loglevel", "debug", "log level")
 	flag.StringVar(&brokers, "brokers", "localhost:9092", "Kafka broker list")
 	flag.StringVar(&topic, "topic", "cdc-test", "Kafka topic to publish events to")
 	flag.StringVar(&promHttpAddr, "prom", "127.0.0.1:10101",
@@ -108,8 +108,8 @@ specify "off" to disable the HTTP listener
 	}
 
 	initLogging(logFile, logLevel)
-	log.Infof("filter started with i=%s, o=%s, log=%s, brokers=%s, topic=%s, prom=%s",
-		inputFile, outputFile, logFile, brokers, topic, promHttpAddr)
+	log.Infof("filter started with i=%s, o=%s, log=%s, loglevel=%s, brokers=%s, topic=%s, prom=%s",
+		inputFile, outputFile, logFile, logLevel, brokers, topic, promHttpAddr)
 
 	if promHttpAddr != "off" {
 		pkg.InitPromHttp(promHttpAddr)
