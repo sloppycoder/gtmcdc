@@ -1,0 +1,13 @@
+run:
+  # include test files or not, default is true
+  tests: true
+
+linters:
+  enable:
+    - megacheck
+    - govet
+    - gocritic
+
+  disable-all: false
+
+# sample from https://github.com/golangci/golangci-lint/blob/master/.golangci.example.yml
