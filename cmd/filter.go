@@ -31,7 +31,7 @@ func doFilter(fin, fout *os.File, brokers, topic string) {
 
 		rec, err := pkg.Parse(line)
 		if err != nil {
-			log.Info("Unable to parse record %s", line)
+			log.Infof("Unable to parse record %s", line)
 			pkg.IncrCounter("lines_parse_error")
 		} else {
 			pkg.IncrCounter("lines_parsed")
@@ -76,7 +76,7 @@ func initLogging(logFile, logLevel string) {
 	level, err := log.ParseLevel(logLevel)
 	if err != nil {
 		level = log.InfoLevel
-		log.Warnf("invalid loglevel %s, defaults to info")
+		log.Warnf("invalid loglevel %s, defaults to info", logLevel)
 	}
 
 	log.SetLevel(level)

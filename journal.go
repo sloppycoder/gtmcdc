@@ -115,7 +115,6 @@ func Parse(raw string) (*JournalRecord, error) {
 			}
 			rec.detail.value = val
 		}
-		break
 
 	default:
 		log.Warnf("journal entry ignored: %s", raw)
