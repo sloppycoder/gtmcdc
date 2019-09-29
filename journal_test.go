@@ -26,13 +26,13 @@ func Test_Parse_Horolog_DAte(t *testing.T) {
 }
 
 func Test_Parse_JournalRecord_1(t *testing.T) {
-	rec, err := Parse(`05\65282,59700\28\0\0\28\0\0\0\0\^acc("00027")="300.00"`)
+	rec, _ := Parse(`05\65282,59700\28\0\0\28\0\0\0\0\^acc("00027")="300.00"`)
 	// fmt.Println(rec)
 	assert.Equal(t, "SET", rec.opcode)
 	assert.Equal(t, "300.00", rec.detail.value)
 
 	// record is too short
-	rec, err = Parse(`05\65282,59700\28`)
+	_, err := Parse(`05\65282,59700\28`)
 	assert.NotNil(t, err)
 
 }
