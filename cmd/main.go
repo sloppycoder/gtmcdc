@@ -27,7 +27,7 @@ func main() {
 
 	conf := pkg.LoadConfig(configFile, devMode)
 	// input file from command line overrides config file
-	if inputFile == "" {
+	if inputFile != "" {
 		conf.InputFile = inputFile
 	}
 
@@ -44,5 +44,5 @@ func main() {
 
 	pkg.DoFilter(fin, fout, conf.KafkaBrokerList, conf.KafkaTopic)
 
-	log.Error("doFilter returned, should not have happened")
+	log.Error("done")
 }
