@@ -3,11 +3,25 @@ package gtmcdc
 import (
 	"bufio"
 	"fmt"
+	"github.com/JeremyLoy/config"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"strings"
 	"time"
 )
+
+const DefaultConfigFile = "filter.env"
+
+type Config struct {
+	KafkaBrokerList string `config:"GTMCDC_KAFKA_BROKERS"`
+	KafkaTopic      string `config:"GTMCDC_KAFKA_TOPIC"`
+	PromHttpAddr    string `config:"GTMCDC_PROM_HTTP_ADDR"`
+	LogFile         string `config:"GTMCDC_LOG"`
+	LogLevel        string `config:"GTMCDC_LOG_LEVEL"`
+	InputFile       string `config:"GTMCDC_INPUT"`
+	OutputFile      string `config:"GTMCDC_OUTPUT"`
+	DevMode         bool   `config:"GTMCDC_DEVMODE"`
+}
 
 //
 // the main processing loop that reads journal extract and publish messages
@@ -116,4 +130,38 @@ func InitInputAndOutput(inputFile, outputFile string) (*os.File, *os.File) {
 	}
 
 	return fin, fout
+}
+
+func LoadConfig(configFile string, devMode bool) *Config {
+	// defaults
+	conf := Config{
+		KafkaBrokerList: "off",
+		PromHttpAddr:    "off",
+		LogFile:         "filter.log",
+		LogLevel:        "debug",
+	}
+
+	if devMode {
+		return &conf
+	}
+
+	config.From(configFile).FromEnv().To(&conf)
+
+	if conf.InputFile == "" {
+		conf.InputFile = "stdin"
+	}
+
+	if conf.OutputFile == "" {
+		conf.OutputFile = "stdout"
+	}
+
+	if conf.LogFile == "" {
+		conf.LogFile = "filter.log"
+	}
+
+	if conf.LogLevel == "" {
+		conf.LogLevel = "info"
+	}
+
+	return &conf
 }

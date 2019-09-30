@@ -7,42 +7,42 @@ import (
 	"os"
 )
 
+func closeFile(f *os.File) {
+	if f != nil {
+		_ = f.Close()
+	}
+}
+
 func main() {
-
-	var inputFile, outputFile, logFile, logLevel, brokers, topic, promHttpAddr string
+	var inputFile, configFile string
 	var devMode bool
-
-	flag.StringVar(&inputFile, "i", "stdin", "input file")
-	flag.StringVar(&outputFile, "o", "stdout", "output file")
-	flag.StringVar(&logFile, "log", "filter.log", "log file")
-	flag.StringVar(&logLevel, "loglevel", "debug", "log level")
-	flag.StringVar(&brokers, "brokers", "localhost:9092", "Kafka broker list")
-	flag.StringVar(&topic, "topic", "cdc-test", "Kafka topic to publish events to")
-	flag.StringVar(&promHttpAddr, "prom", "127.0.0.1:10101",
-		`expose metrics on this address to be scraped by Prometheus, 
-specify "off" to disable the HTTP listener
-`)
-	// this is for developer use only
+	flag.StringVar(&inputFile, "i", "", "input file")
+	flag.StringVar(&configFile, "conf", pkg.DefaultConfigFile, "filter config file")
 	flag.BoolVar(&devMode, "dev", false, "Developer mode, internal use only.")
-
 	flag.Parse()
 
-	if promHttpAddr != "off" {
-		pkg.InitPromHttp(promHttpAddr)
+	if os.Getenv("GTMCDC_DEVMODE") != "" {
+		devMode = true
 	}
 
-	fin, fout := pkg.InitInputAndOutput(inputFile, outputFile)
-	defer func(fin, fout *os.File) {
-		if fin != nil {
-			_ = fin.Close()
-		}
+	conf := pkg.LoadConfig(configFile, devMode)
+	// input file from command line overrides config file
+	if inputFile == "" {
+		conf.InputFile = inputFile
+	}
 
-		if fout != nil {
-			_ = fout.Close()
-		}
-	}(fin, fout)
+	pkg.InitLogging(conf.LogFile, conf.LogLevel)
+	log.Infof("Starting filter with dev=%t, conf=%s, %v", devMode, configFile, conf)
 
-	pkg.DoFilter(fin, fout, brokers, topic)
+	if conf.PromHttpAddr != "off" {
+		pkg.InitPromHttp(conf.PromHttpAddr)
+	}
 
-	log.Error("doFilter returned, should have happened")
+	fin, fout := pkg.InitInputAndOutput(conf.InputFile, conf.OutputFile)
+	defer closeFile(fin)
+	defer closeFile(fout)
+
+	pkg.DoFilter(fin, fout, conf.KafkaBrokerList, conf.KafkaTopic)
+
+	log.Error("doFilter returned, should not have happened")
 }
