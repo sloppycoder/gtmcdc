@@ -6,6 +6,8 @@
 *.iml
 *.swp
 *.gz
+repl_procedures/A/
+repl_procedures/B/
 
 # binaries
 filter

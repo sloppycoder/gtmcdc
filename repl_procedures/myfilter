@@ -1,0 +1,4 @@
+#!/bin/bash
+
+$PWD/../filter -dev -o $PWD/B/filter.log
+
