@@ -41,6 +41,7 @@ source ./ydbenv B r128
 # start replication receiver
 # in this default setup the Kafka publishing 
 # and Prometheus listener are disabled
+export GTMCDC_DEVMODE=1
 ./replicating_start_with_filter B 4001
 tail -f B/filter.log
 
