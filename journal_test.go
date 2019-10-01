@@ -23,6 +23,9 @@ func Test_Parse_Horolog_DAte(t *testing.T) {
 
 	_, err = parseHorologTime(",")
 	assert.NotNil(t, err)
+
+	_, err = parseHorologTime("29800130,1234")
+	assert.NotNil(t, err)
 }
 
 func Test_Parse_JournalRecord_1(t *testing.T) {
