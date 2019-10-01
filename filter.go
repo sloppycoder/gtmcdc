@@ -6,10 +6,11 @@ import (
 	"github.com/JeremyLoy/config"
 	log "github.com/sirupsen/logrus"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 )
+
+const DefaultConfigFile = "filter.env"
 
 type Config struct {
 	KafkaBrokerList string `config:"GTMCDC_KAFKA_BROKERS"`
@@ -25,16 +26,7 @@ type Config struct {
 //
 // the main processing loop that reads journal extract and publish messages
 //
-func DoFilter(fin, fout *os.File, brokers, topic string) {
-	useKafka := false
-
-	brokerList := strings.Split(brokers, ",")
-	if len(brokerList) >= 1 && brokerList[0] != "off" {
-		NewCDCProducer(brokerList)
-		defer CleanupProducer()
-		useKafka = true
-	}
-
+func DoFilter(fin, fout *os.File) {
 	scanner := bufio.NewScanner(fin)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -50,10 +42,10 @@ func DoFilter(fin, fout *os.File, brokers, topic string) {
 			jsonstr := rec.Json()
 			log.Debugf("line parsed to json %s", jsonstr)
 
-			if useKafka {
+			if IsKafkaAvailable() {
 				start := time.Now()
 
-				err = PublishMessage(topic, jsonstr)
+				err = PublishMessage(jsonstr)
 				if err != nil {
 					log.Warn("Unable to publish message for journal record")
 					IncrCounter("lines_parsed_but_not_published")
@@ -132,7 +124,6 @@ func InitInputAndOutput(inputFile, outputFile string) (*os.File, *os.File) {
 }
 
 func LoadConfig(configFile string, devMode bool) *Config {
-	// defaults
 	conf := Config{
 		KafkaBrokerList: "off",
 		PromHttpAddr:    "off",
@@ -163,9 +154,4 @@ func LoadConfig(configFile string, devMode bool) *Config {
 	}
 
 	return &conf
-}
-
-func DefaultConfigFile() string {
-	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
-	return dir + "/filter.env"
 }

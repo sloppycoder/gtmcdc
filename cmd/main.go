@@ -17,7 +17,7 @@ func main() {
 	var inputFile, configFile string
 	var devMode bool
 	flag.StringVar(&inputFile, "i", "", "input file")
-	flag.StringVar(&configFile, "conf", pkg.DefaultConfigFile(), "filter config file")
+	flag.StringVar(&configFile, "conf", pkg.DefaultConfigFile, "filter config file")
 	flag.BoolVar(&devMode, "dev", false, "Developer mode, internal use only.")
 	flag.Parse()
 
@@ -34,15 +34,23 @@ func main() {
 	pkg.InitLogging(conf.LogFile, conf.LogLevel)
 	log.Infof("Starting filter with dev=%t, conf=%s, %v", devMode, configFile, conf)
 
+	err := pkg.InitProducer(conf.KafkaBrokerList, conf.KafkaTopic)
+	if err == nil {
+		defer pkg.CleanupProducer()
+	}
+
 	if conf.PromHttpAddr != "off" {
-		pkg.InitPromHttp(conf.PromHttpAddr)
+		err = pkg.InitPromHttp(conf.PromHttpAddr)
+		if err != nil {
+			log.Warn(err)
+		}
 	}
 
 	fin, fout := pkg.InitInputAndOutput(conf.InputFile, conf.OutputFile)
 	defer closeFile(fin)
 	defer closeFile(fout)
 
-	pkg.DoFilter(fin, fout, conf.KafkaBrokerList, conf.KafkaTopic)
+	pkg.DoFilter(fin, fout)
 
 	log.Error("done")
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	dto "github.com/prometheus/client_model/go"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -56,9 +55,13 @@ func HistoObserve(name string, value float64) {
 	histo.Observe(value)
 }
 
-func InitPromHttp(addr string) {
+func InitPromHttp(addr string) error {
+	var err error
+
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
-		log.Warn(http.ListenAndServe(addr, nil))
+		err = http.ListenAndServe(addr, nil)
 	}()
+
+	return err
 }

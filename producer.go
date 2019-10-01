@@ -4,9 +4,11 @@ import (
 	"errors"
 	"github.com/Shopify/sarama"
 	log "github.com/sirupsen/logrus"
+	"strings"
 )
 
 var cdcProducer sarama.SyncProducer
+var cdcTopic string
 
 func CleanupProducer() {
 	if cdcProducer != nil {
@@ -15,13 +17,13 @@ func CleanupProducer() {
 	}
 }
 
-func PublishMessage(topic, message string) error {
+func PublishMessage(message string) error {
 	if cdcProducer == nil {
-		return errors.New("producer not inialized")
+		return errors.New("producer not available")
 	}
 
 	_, _, err := cdcProducer.SendMessage(&sarama.ProducerMessage{
-		Topic: topic,
+		Topic: cdcTopic,
 		Value: sarama.StringEncoder(message),
 	})
 
@@ -33,7 +35,12 @@ func PublishMessage(topic, message string) error {
 	return nil
 }
 
-func NewCDCProducer(brokerList []string) {
+func InitProducer(brokers, topic string) error {
+	brokerList := strings.Split(brokers, ",")
+	if len(brokerList) <= 1 || brokerList[0] == "off" || topic == "" {
+		return errors.New("invalid kafka broker list specified")
+	}
+
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForLocal
 	config.Producer.Retry.Max = 10
@@ -45,8 +52,23 @@ func NewCDCProducer(brokerList []string) {
 	// - For the topic, you could increase `min.insync.replicas`.
 	producer, err := sarama.NewSyncProducer(brokerList, config)
 	if err != nil {
-		log.Fatalln("Failed to start Sarama producer:", err)
+		log.Errorln("Failed to start Sarama producer:", err)
+		return err
 	}
 
+	SetProducer(producer)
+
+	return nil
+}
+
+func SetProducer(producer sarama.SyncProducer) {
 	cdcProducer = producer
+}
+
+func IsKafkaAvailable() bool {
+	if cdcProducer == nil {
+		return false
+	} else {
+		return true
+	}
 }
