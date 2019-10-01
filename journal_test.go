@@ -37,6 +37,15 @@ func Test_Parse_JournalRecord_1(t *testing.T) {
 
 }
 
+func Test_Parse_JournalRecord_2(t *testing.T) {
+	rec, _ := Parse(`09\65287,58606\8\0\0\8\0\0\1\`)
+	// fmt.Println(rec)
+	assert.Equal(t, "TCOM", rec.opcode)
+	assert.Equal(t, 8, rec.tran.tokenSeq)
+	assert.Equal(t, "", rec.tran.tid)
+	assert.Equal(t, "1", rec.tran.partners)
+}
+
 func Test__JournalRecord_Json(t *testing.T) {
 	rec, err := Parse(`05\65282,59700\28\0\0\28\0\0\0\0\^acc("00027")="300.00"`)
 	assert.Nil(t, err)

@@ -48,6 +48,7 @@ type Transaction struct {
 	tokenSeq  int
 	partners  string
 	updateNum int
+	tid       string
 }
 
 type Expr struct {
@@ -74,6 +75,7 @@ type JournalEvent struct {
 	StreamSeq       int    `json:"stream_seq"`
 	JournalSeq      int    `json:"journal_seq"`
 	Partners        string `json:"partners"`
+	TransactionId   string `json:"transaction_id,omitempty"`
 	ProcessId       int16  `json:"pid,omitempty"`
 	ClientProcessId int16  `json:"client_pid,omitempty"`
 }
@@ -120,7 +122,7 @@ func Parse(raw string) (*JournalRecord, error) {
 	}
 
 	switch rec.opcode {
-	case "SET", "KILL", "TCOM", "ZTRIG":
+	case "SET", "KILL", "ZKILL", "ZTRIG":
 		rec.tran.tokenSeq, rec.tran.updateNum = atoi(s[5]), atoi(s[8])
 		rec.repl.streamNum, rec.repl.streamSeq = int8(atoi(s[6])), atoi(s[7])
 
@@ -135,8 +137,20 @@ func Parse(raw string) (*JournalRecord, error) {
 			rec.detail.value = val
 		}
 
+	case "TSTART", "TCOM":
+		rec.tran.tokenSeq = atoi(s[5])
+		rec.repl.streamNum, rec.repl.streamSeq = int8(atoi(s[6])), atoi(s[7])
+		if len(s) > 7 {
+			// must be TCOM
+			rec.tran.partners = s[8]
+			rec.tran.tid = s[9]
+		}
+
+	case "NULL", "EOF", "LGTRIG", "PINI", "PFIN":
+		log.Debugf("journal entry ignored: %s", raw)
+
 	default:
-		log.Warnf("journal entry ignored: %s", raw)
+		log.Warnf("unknown journal entry: %s", raw)
 	}
 
 	return &rec, nil
