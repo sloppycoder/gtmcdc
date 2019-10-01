@@ -6,11 +6,10 @@ import (
 	"github.com/JeremyLoy/config"
 	log "github.com/sirupsen/logrus"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
-
-const DefaultConfigFile = "filter.env"
 
 type Config struct {
 	KafkaBrokerList string `config:"GTMCDC_KAFKA_BROKERS"`
@@ -164,4 +163,13 @@ func LoadConfig(configFile string, devMode bool) *Config {
 	}
 
 	return &conf
+}
+
+func DefaultConfigFile() string {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		dir = "./"
+	}
+
+	return dir + "/filter.env"
 }

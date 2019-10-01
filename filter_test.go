@@ -23,9 +23,8 @@ func Test_LoadConfig_Default(t *testing.T) {
 	brokers := "anyhost:1000"
 	_ = os.Setenv("GTMCDC_KAFKA_BROKERS", brokers)
 
-	conf := LoadConfig(DefaultConfigFile, false)
+	conf := LoadConfig("./filter.env", false)
 
 	assert.Equal(t, brokers, conf.KafkaBrokerList)        // env overrides config file
 	assert.Equal(t, "localhost:10101", conf.PromHttpAddr) // from config file
-	assert.Equal(t, "info", conf.LogLevel)                // default not in config file
 }

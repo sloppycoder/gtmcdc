@@ -33,21 +33,21 @@ const (
 
 type Header struct {
 	timestamp time.Time
-	pid       string
-	clientPid string
+	pid       int16
+	clientPid int16
 }
 
 type Repl struct {
-	streamNum  string
-	streamSeq  string
-	journalSeq string
+	streamNum  int8
+	streamSeq  int
+	journalSeq int
 }
 
 type Transaction struct {
 	token     string
-	tokenSeq  string
+	tokenSeq  int
 	partners  string
-	updateNum string
+	updateNum int
 }
 
 type Expr struct {
@@ -64,9 +64,28 @@ type JournalRecord struct {
 }
 
 type JournalEvent struct {
-	Operand string `json:"operand,omitempty"`
-	Node    string `json:"node,omitempty"`
-	Value   string `json:"value,omitempty"`
+	Operand         string `json:"operand,omitempty"`
+	Node            string `json:"node,omitempty"`
+	Value           string `json:"value,omitempty"`
+	Token           string `json:"token,omitempty"`
+	TokenSeq        int    `json:"token_seq"`
+	UpdateNum       int    `json:"update_num"`
+	StreamNum       int8   `json:"stream_num"`
+	StreamSeq       int    `json:"stream_seq"`
+	JournalSeq      int    `json:"journal_seq"`
+	Partners        string `json:"partners"`
+	ProcessId       int16  `json:"pid,omitempty"`
+	ClientProcessId int16  `json:"client_pid,omitempty"`
+}
+
+func atoi(s string) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		log.Warnf("%s is not an integer", s)
+		i = 0
+	}
+
+	return i
 }
 
 //
@@ -91,19 +110,19 @@ func Parse(raw string) (*JournalRecord, error) {
 		detail: Expr{},
 	}
 
-	rec.header.pid = s[2]
+	rec.header.pid = int16(atoi(s[2]))
 	rec.header.timestamp = ts
 
 	if OpCodes[s[0]] == "PINI" && len(s) >= 8 {
-		rec.header.clientPid = s[7]
+		rec.header.clientPid = int16(atoi(s[7]))
 	} else {
-		rec.header.clientPid = s[4]
+		rec.header.clientPid = int16(atoi(s[4]))
 	}
 
 	switch rec.opcode {
 	case "SET", "KILL", "TCOM", "ZTRIG":
-		rec.tran.tokenSeq, rec.tran.updateNum = s[5], s[8]
-		rec.repl.streamNum, rec.repl.streamSeq = s[6], s[7]
+		rec.tran.tokenSeq, rec.tran.updateNum = atoi(s[5]), atoi(s[8])
+		rec.repl.streamNum, rec.repl.streamSeq = int8(atoi(s[6])), atoi(s[7])
 
 		s2 := strings.Split(s[len(s)-1], "=")
 		rec.detail.nodeFlags = s2[0]
@@ -125,9 +144,15 @@ func Parse(raw string) (*JournalRecord, error) {
 
 func (rec *JournalRecord) Json() string {
 	event := JournalEvent{
-		Operand: rec.opcode,
-		Node:    rec.detail.nodeFlags,
-		Value:   rec.detail.value,
+		Operand:    rec.opcode,
+		Node:       rec.detail.nodeFlags,
+		Value:      rec.detail.value,
+		Token:      rec.tran.token,
+		TokenSeq:   rec.tran.tokenSeq,
+		UpdateNum:  rec.tran.updateNum,
+		StreamNum:  rec.repl.streamNum,
+		StreamSeq:  rec.repl.streamSeq,
+		JournalSeq: rec.repl.journalSeq,
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -161,5 +186,6 @@ func parseHorologTime(horolog string) (time.Time, error) {
 
 	horologBaseTime := time.Date(1841, 1, 1, 0, 0, 0, 0, now.Location())
 	seconds := day*86400 + sec
+
 	return horologBaseTime.Add(time.Duration(seconds) * time.Second), nil
 }

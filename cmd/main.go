@@ -17,7 +17,7 @@ func main() {
 	var inputFile, configFile string
 	var devMode bool
 	flag.StringVar(&inputFile, "i", "", "input file")
-	flag.StringVar(&configFile, "conf", pkg.DefaultConfigFile, "filter config file")
+	flag.StringVar(&configFile, "conf", pkg.DefaultConfigFile(), "filter config file")
 	flag.BoolVar(&devMode, "dev", false, "Developer mode, internal use only.")
 	flag.Parse()
 
