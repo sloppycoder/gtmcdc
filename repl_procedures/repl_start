@@ -1,0 +1,26 @@
+#!/bin/bash
+
+if [ "$1" = "" ]; then
+  echo Must specify source database name
+  exit 1
+fi
+
+if [ "$2" = "" ]; then
+  echo Must specify target database name
+  exit 1
+fi
+
+# start receiver and filter for target site
+# copied from replicating_start
+source ./ydbenv $2 r128
+$ydb_dist/mupip replicate -source -start -passive -instsecondary=dummy -buffsize=1048576 -log=$PWD/$2/source$1_dummy.log   # creates the Journal Pool
+$ydb_dist/mupip replicate -receive -start -listenport=4001 -buffsize=1048576 -log=$PWD/$1/receive.log -filter=$PWD/../filter
+$ydb_dist/mupip replicate -receive -checkhealth
+
+# start sender at source site
+# copied from origination_start
+source ./ydbenv $1 r128
+$ydb_dist/mupip replicate -source -start -instsecondary=$2 -secondary=localhost:4001 -buffsize=1048576 -log=$PWD/$1/$1_$2.log  # creates the Journal Pool
+$ydb_dist/mupip replicate -source -checkhealth
+
+ps -fu `whoami` | grep mupip

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ "$1" = "" ]; then
+  echo Must specify database name
+  exit 1
+fi
+
+source ./ydbenv $1 r128
+/usr/local/lib/yottadb/r128/ydb
