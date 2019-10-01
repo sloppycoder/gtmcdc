@@ -4,12 +4,24 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	dto "github.com/prometheus/client_model/go"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
 var counters map[string]prometheus.Counter
 var histograms map[string]prometheus.Histogram
+
+func GetCounterValue(name string) float64 {
+	counter, exists := counters[name]
+	if !exists {
+		return 0
+	}
+
+	pb := &dto.Metric{}
+	_ = counter.Write(pb)
+	return pb.GetCounter().GetValue()
+}
 
 func IncrCounter(name string) {
 	if counters == nil {

@@ -34,7 +34,6 @@ func Test_Parse_JournalRecord_1(t *testing.T) {
 	// record is too short
 	_, err := Parse(`05\65282,59700\28`)
 	assert.NotNil(t, err)
-
 }
 
 func Test_Parse_JournalRecord_2(t *testing.T) {
@@ -48,11 +47,19 @@ func Test_Parse_JournalRecord_2(t *testing.T) {
 	assert.Equal(t, "1", rec.tran.partners)
 }
 
-func Test__JournalRecord_Json(t *testing.T) {
+func Test_JournalRecord_Json(t *testing.T) {
 	rec, err := Parse(`05\65282,59700\28\0\0\28\0\0\0\0\^acc("00027")="300.00"`)
 	assert.Nil(t, err)
 
 	jstr := rec.Json()
 	expected := `{"operand":"SET","transaction_num":"28","token_seq":28,"update_num":0,"stream_num":0,"stream_seq":0,"journal_seq":0,"node":"^acc(\"00027\")","value":"300.00"}`
 	assert.Equal(t, expected, jstr)
+}
+
+func Test_atli(t *testing.T) {
+	i := atoi("100")
+	assert.Equal(t, 100, i)
+
+	i = atoi("xx")
+	assert.Equal(t, 0, i)
 }

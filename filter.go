@@ -47,13 +47,13 @@ func DoFilter(fin, fout *os.File, brokers, topic string) {
 		} else {
 			IncrCounter("lines_parsed")
 
-			jstr := rec.Json()
-			log.Debugf("line parsed to json %s", jstr)
+			jsonstr := rec.Json()
+			log.Debugf("line parsed to json %s", jsonstr)
 
 			if useKafka {
 				start := time.Now()
 
-				err = PublishMessage(topic, jstr)
+				err = PublishMessage(topic, jsonstr)
 				if err != nil {
 					log.Warn("Unable to publish message for journal record")
 					IncrCounter("lines_parsed_but_not_published")
@@ -166,10 +166,6 @@ func LoadConfig(configFile string, devMode bool) *Config {
 }
 
 func DefaultConfigFile() string {
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		dir = "./"
-	}
-
+	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 	return dir + "/filter.env"
 }
