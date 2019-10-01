@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -64,10 +65,6 @@ func Test_InitLogging(t *testing.T) {
 }
 
 func Test_DoFilter_MockKafka(t *testing.T) {
-	defer func() {
-		_ = os.Remove("tmp_output.txt")
-	}()
-
 	sp := mocks.NewSyncProducer(t, nil)
 	defer CleanupProducer()
 
@@ -75,24 +72,53 @@ func Test_DoFilter_MockKafka(t *testing.T) {
 	sp.ExpectSendMessageAndFail(errors.New("send message failed"))
 	SetProducer(sp)
 
-	readCounter := GetCounterValue("lines_read_from_input")
-	errorCounter := GetCounterValue("lines_parse_error")
-	writeCounter := GetCounterValue("lines_output_written")
-	messageCounter := GetCounterValue("lines_parsed_and_published")
-	publishFailedCounter := GetCounterValue("lines_parsed_but_not_published")
+	counters := []string{
+		"lines_read_from_input",
+		"lines_parse_error",
+		"lines_output_written",
+		"lines_parsed_and_published",
+		"lines_parsed_but_not_published",
+	}
 
-	fin, fout := InitInputAndOutput("testdata/test1.txt", "tmp_output.txt")
+	prevValues := getCounters(counters)
+
+	fin, fout := InitInputAndOutput("testdata/test1.txt", nullFile())
 	DoFilter(fin, fout)
 
-	readDelta := GetCounterValue("lines_read_from_input") - readCounter
-	errorDelta := GetCounterValue("lines_parse_error") - errorCounter
-	writeDelta := GetCounterValue("lines_output_written") - writeCounter
-	messageDelta := GetCounterValue("lines_parsed_and_published") - messageCounter
-	publishFailedDelta := GetCounterValue("lines_parsed_but_not_published") - publishFailedCounter
+	currentValues := getCounters(counters)
+	deltas, err := deltaCounters(prevValues, currentValues)
 
-	assert.Equal(t, 3.00, readDelta)
-	assert.Equal(t, 1.00, errorDelta)
-	assert.Equal(t, 2.00, writeDelta)
-	assert.Equal(t, 1.00, messageDelta)
-	assert.Equal(t, 1.00, publishFailedDelta)
+	assert.Nil(t, err)
+	expected := []float64{3.0, 1.0, 2.0, 1.0, 1.0}
+	assert.ElementsMatch(t, expected, deltas)
+}
+
+func getCounters(counterNames []string) []float64 {
+	values := make([]float64, len(counterNames))
+	for i, name := range counterNames {
+		values[i] = GetCounterValue(name)
+	}
+
+	return values
+}
+
+func deltaCounters(prev, current []float64) ([]float64, error) {
+	if prev == nil || current == nil || len(prev) != len(current) {
+		return nil, errors.New("invalid input")
+	}
+
+	deltas := make([]float64, len(prev))
+	for i := 0; i < len(prev); i++ {
+		deltas[i] = current[i] - prev[i]
+	}
+
+	return deltas, nil
+}
+
+func nullFile() string {
+	if runtime.GOOS == "widnows" {
+		return "NUL"
+	} else {
+		return "/dev/null"
+	}
 }
