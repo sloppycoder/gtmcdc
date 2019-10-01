@@ -42,20 +42,20 @@ func DoFilter(fin, fout *os.File, brokers, topic string) {
 
 		rec, err := Parse(line)
 		if err != nil {
-			log.Infof("Unable to parse record %s", line)
+			log.Info("Unable to parse record")
 			IncrCounter("lines_parse_error")
 		} else {
 			IncrCounter("lines_parsed")
 
 			jstr := rec.Json()
-			log.Debugf("line parsed to json |%s|=>|%s|", line, jstr)
+			log.Debugf("line parsed to json %s", jstr)
 
 			if useKafka {
 				start := time.Now()
 
 				err = PublishMessage(topic, jstr)
 				if err != nil {
-					log.Warnf("Unable to publish message for journal record %s", line)
+					log.Warn("Unable to publish message for journal record")
 					IncrCounter("lines_parsed_but_not_published")
 				} else {
 					IncrCounter("lines_parsed_and_published")

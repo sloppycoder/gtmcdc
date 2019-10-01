@@ -38,11 +38,13 @@ func Test_Parse_JournalRecord_1(t *testing.T) {
 }
 
 func Test_Parse_JournalRecord_2(t *testing.T) {
-	rec, _ := Parse(`09\65287,58606\8\0\0\8\0\0\1\`)
-	// fmt.Println(rec)
+	rec, _ := Parse(`08\65287,62154\3\0\0\3\0\0`)
+	assert.Equal(t, "TSTART", rec.opcode)
+
+	rec, _ = Parse(`09\65287,58606\8\0\0\8\0\0\1\`)
 	assert.Equal(t, "TCOM", rec.opcode)
 	assert.Equal(t, 8, rec.tran.tokenSeq)
-	assert.Equal(t, "", rec.tran.tid)
+	assert.Equal(t, "", rec.tran.tag)
 	assert.Equal(t, "1", rec.tran.partners)
 }
 
@@ -51,6 +53,6 @@ func Test__JournalRecord_Json(t *testing.T) {
 	assert.Nil(t, err)
 
 	jstr := rec.Json()
-	expected := `{"operand":"SET","node":"^acc(\"00027\")","value":"300.00","token_seq":28,"update_num":0,"stream_num":0,"stream_seq":0,"journal_seq":0,"partners":""}`
+	expected := `{"operand":"SET","transaction_num":"28","token_seq":28,"update_num":0,"stream_num":0,"stream_seq":0,"journal_seq":0,"node":"^acc(\"00027\")","value":"300.00"}`
 	assert.Equal(t, expected, jstr)
 }

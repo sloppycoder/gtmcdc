@@ -46,9 +46,10 @@ type Repl struct {
 type Transaction struct {
 	token     string
 	tokenSeq  int
+	num       string
 	partners  string
 	updateNum int
-	tid       string
+	tag       string
 }
 
 type Expr struct {
@@ -66,18 +67,19 @@ type JournalRecord struct {
 
 type JournalEvent struct {
 	Operand         string `json:"operand,omitempty"`
-	Node            string `json:"node,omitempty"`
-	Value           string `json:"value,omitempty"`
+	TransactionNum  string `json:"transaction_num,omitempty"`
 	Token           string `json:"token,omitempty"`
 	TokenSeq        int    `json:"token_seq"`
 	UpdateNum       int    `json:"update_num"`
 	StreamNum       int8   `json:"stream_num"`
 	StreamSeq       int    `json:"stream_seq"`
 	JournalSeq      int    `json:"journal_seq"`
-	Partners        string `json:"partners"`
-	TransactionId   string `json:"transaction_id,omitempty"`
+	Partners        string `json:"partners,omitempty"`
+	TransactionTag  string `json:"transaction_tag,omitempty"`
 	ProcessId       int16  `json:"pid,omitempty"`
 	ClientProcessId int16  `json:"client_pid,omitempty"`
+	Node            string `json:"node,omitempty"`
+	Value           string `json:"value,omitempty"`
 }
 
 func atoi(s string) int {
@@ -94,6 +96,8 @@ func atoi(s string) int {
 // parse a GT.M journal extract text string into JournalRecord
 //
 func Parse(raw string) (*JournalRecord, error) {
+	log.Debugf("parsing:%s", raw)
+
 	s := strings.Split(raw, "\\")
 	if len(s) < 5 {
 		return nil, errors.New(ErrorInvalidRecord)
@@ -112,8 +116,9 @@ func Parse(raw string) (*JournalRecord, error) {
 		detail: Expr{},
 	}
 
-	rec.header.pid = int16(atoi(s[2]))
+	rec.header.pid = int16(atoi(s[3]))
 	rec.header.timestamp = ts
+	rec.tran.num = s[2]
 
 	if OpCodes[s[0]] == "PINI" && len(s) >= 8 {
 		rec.header.clientPid = int16(atoi(s[7]))
@@ -140,10 +145,10 @@ func Parse(raw string) (*JournalRecord, error) {
 	case "TSTART", "TCOM":
 		rec.tran.tokenSeq = atoi(s[5])
 		rec.repl.streamNum, rec.repl.streamSeq = int8(atoi(s[6])), atoi(s[7])
-		if len(s) > 7 {
+		if rec.opcode == "TCOM" {
 			// must be TCOM
 			rec.tran.partners = s[8]
-			rec.tran.tid = s[9]
+			rec.tran.tag = s[9]
 		}
 
 	case "NULL", "EOF", "LGTRIG", "PINI", "PFIN":
@@ -158,15 +163,16 @@ func Parse(raw string) (*JournalRecord, error) {
 
 func (rec *JournalRecord) Json() string {
 	event := JournalEvent{
-		Operand:    rec.opcode,
-		Node:       rec.detail.nodeFlags,
-		Value:      rec.detail.value,
-		Token:      rec.tran.token,
-		TokenSeq:   rec.tran.tokenSeq,
-		UpdateNum:  rec.tran.updateNum,
-		StreamNum:  rec.repl.streamNum,
-		StreamSeq:  rec.repl.streamSeq,
-		JournalSeq: rec.repl.journalSeq,
+		Operand:        rec.opcode,
+		TransactionNum: rec.tran.num,
+		Token:          rec.tran.token,
+		TokenSeq:       rec.tran.tokenSeq,
+		UpdateNum:      rec.tran.updateNum,
+		StreamNum:      rec.repl.streamNum,
+		StreamSeq:      rec.repl.streamSeq,
+		JournalSeq:     rec.repl.journalSeq,
+		Node:           rec.detail.nodeFlags,
+		Value:          rec.detail.value,
 	}
 
 	bytes, err := json.Marshal(&event)
