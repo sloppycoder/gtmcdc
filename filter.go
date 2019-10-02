@@ -12,7 +12,7 @@ import (
 )
 
 // DefaultConfigFile is the default configuration file name
-const DefaultConfigFile = "filter.env"
+const DefaultConfigFile = "cdcfilter.env"
 
 // Config stores the filter configurations
 type Config struct {

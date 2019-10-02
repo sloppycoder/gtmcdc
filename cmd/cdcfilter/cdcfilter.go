@@ -2,9 +2,10 @@ package main
 
 import (
 	"flag"
-	log "github.com/sirupsen/logrus"
 	pkg "gtmcdc"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func closeFile(f *os.File) {
@@ -39,8 +40,8 @@ func main() {
 		defer pkg.CleanupProducer()
 	}
 
-	if conf.PromHttpAddr != "off" {
-		err = pkg.InitPromHttp(conf.PromHttpAddr)
+	if conf.PromHTTPAddr != "off" {
+		err = pkg.InitPromHTTP(conf.PromHTTPAddr)
 		if err != nil {
 			log.Warn(err)
 		}

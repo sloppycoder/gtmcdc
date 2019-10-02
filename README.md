@@ -14,7 +14,7 @@ Tested with:
 
 ### Build
 ```
-go build -o filter ./cmd
+go build ./cmd/cdcfilter
 
 ```
 
