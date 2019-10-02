@@ -30,7 +30,6 @@ cd repl_procedures
 ./dbinit B
 
 # start replication processes 
-export GTMCDC_KAFKA_BROKERS=off
 ./repl_start A B
 
 # check replication filter log

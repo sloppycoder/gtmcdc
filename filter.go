@@ -7,27 +7,42 @@ import (
 	"strings"
 	"time"
 
-	"github.com/JeremyLoy/config"
+	"github.com/caarlos0/env/v6"
+	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 )
 
-// DefaultConfigFile is the default configuration file name
-const DefaultConfigFile = "cdcfilter.env"
-
-// Config stores the filter configurations
+// Config stores the configurations for the filter
 type Config struct {
-	KafkaBrokerList string `config:"GTMCDC_KAFKA_BROKERS"`
-	KafkaTopic      string `config:"GTMCDC_KAFKA_TOPIC"`
-	PromHTTPAddr    string `config:"GTMCDC_PROM_HTTP_ADDR"`
-	LogFile         string `config:"GTMCDC_LOG"`
-	LogLevel        string `config:"GTMCDC_LOG_LEVEL"`
-	InputFile       string `config:"GTMCDC_INPUT"`
-	OutputFile      string `config:"GTMCDC_OUTPUT"`
-	DevMode         bool   `config:"GTMCDC_DEVMODE"`
+	KafkaBrokerList string `env:"GTMCDC_KAFKA_BROKERS" envDefault:"off"`
+	KafkaTopic      string `env:"GTMCDC_KAFKA_TOPIC" envDefault:"cdc-test"`
+	PromHTTPAddr    string `env:"GTMCDC_PROM_HTTP_ADDR" envDefault:"off"`
+	LogFile         string `env:"GTMCDC_LOG" envDefault:"cdcfilter.log"`
+	LogLevel        string `env:"GTMCDC_LOG_LEVEL" envDefault:"debug"`
+}
+
+// LoadConfig loads the filter configurations from file
+func LoadConfig(envFile string) *Config {
+	// environment varialbe overrides command
+	env2 := os.Getenv("GTMCDC_ENV")
+	if envFile == "" && env2 != "" {
+		envFile = env2
+	}
+
+	if envFile != "" {
+		_ = godotenv.Load(envFile)
+	}
+
+	conf := Config{}
+	if err := env.Parse(&conf); err != nil {
+		log.Warnf("%+v\n", err)
+	}
+
+	return &conf
 }
 
 // DoFilter is the main processing loop that
-//reads journal extract and publish messages
+// reads journal extract and publish messages
 func DoFilter(fin, fout *os.File) {
 	scanner := bufio.NewScanner(fin)
 	for scanner.Scan() {
@@ -85,14 +100,10 @@ func InitLogging(logFile, logLevel string) {
 	}
 
 	log.SetOutput(file)
-
 	level, err := log.ParseLevel(logLevel)
-	if err != nil {
-		level = log.InfoLevel
-		log.Warnf("invalid loglevel %s, defaults to info", logLevel)
+	if err == nil {
+		log.SetLevel(level)
 	}
-
-	log.SetLevel(level)
 }
 
 // InitInputAndOutput initialize input and output files for the filter
@@ -105,7 +116,6 @@ func InitInputAndOutput(inputFile, outputFile string) (*os.File, *os.File) {
 	// the primary reason for this read input from file logic is that
 	// in my Goland IDE there's no way to redirect STDIN and STDOUT
 	// in Run configuration, so I couldn't debug the code without this.
-
 	if inputFile != "" && !strings.EqualFold(inputFile, "stdin") {
 		fin, err = os.OpenFile(inputFile, os.O_RDONLY, 0666)
 		if err != nil {
@@ -125,39 +135,4 @@ func InitInputAndOutput(inputFile, outputFile string) (*os.File, *os.File) {
 	}
 
 	return fin, fout
-}
-
-// LoadConfig loads the filter configurations from file
-// devMode flags will override configurations file
-func LoadConfig(configFile string, devMode bool) *Config {
-	conf := Config{
-		KafkaBrokerList: "off",
-		PromHTTPAddr:    "off",
-		LogFile:         "cdcfilter.log",
-		LogLevel:        "debug",
-	}
-
-	if devMode {
-		return &conf
-	}
-
-	config.From(configFile).FromEnv().To(&conf)
-
-	if conf.InputFile == "" {
-		conf.InputFile = "stdin"
-	}
-
-	if conf.OutputFile == "" {
-		conf.OutputFile = "stdout"
-	}
-
-	if conf.LogFile == "" {
-		conf.LogFile = "cdcfilter.log"
-	}
-
-	if conf.LogLevel == "" {
-		conf.LogLevel = "info"
-	}
-
-	return &conf
 }

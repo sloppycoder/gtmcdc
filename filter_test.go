@@ -31,38 +31,40 @@ func Test_InitInputAndOutput(t *testing.T) {
 	assert.NotEqual(t, os.Stdout, fout)
 }
 
-func Test_LoadConfig_DevMode(t *testing.T) {
-	conf := LoadConfig("_not_exist", true)
+func Test_LoadConfig_Default(t *testing.T) {
+	conf := LoadConfig("")
 	assert.Equal(t, "off", conf.KafkaBrokerList)
 	assert.Equal(t, "off", conf.PromHTTPAddr)
 	assert.Equal(t, "debug", conf.LogLevel)
 }
 
-func Test_LoadConfig_Default(t *testing.T) {
-	brokers := "anyhost:1000"
-	_ = os.Setenv("GTMCDC_KAFKA_BROKERS", brokers)
+func Test_LoadConfig_Override(t *testing.T) {
+	// write a test env file
+	tmpFile, err := testTempFileWithContent([]byte("GTMCDC_KAFKA_BROKERS=myhost:10000"))
+	assert.Nil(t, err)
+	defer os.Remove(tmpFile)
 
-	conf := LoadConfig(DefaultConfigFile, false)
+	os.Setenv("GTMCDC_ENV", tmpFile)
+	conf := LoadConfig("")
 
-	assert.Equal(t, brokers, conf.KafkaBrokerList)        // env overrides config file
-	assert.Equal(t, "localhost:10101", conf.PromHTTPAddr) // from config file
+	assert.Equal(t, "myhost:10000", conf.KafkaBrokerList) // value from tmp file
+	assert.Equal(t, "off", conf.PromHTTPAddr)             // default value
 }
 
 func Test_InitLogging(t *testing.T) {
-	tmplog := "temp.log"
-	tmpmsg := "test logging"
-	defer func() {
-		_ = os.Remove(tmplog)
-	}()
+	tmplog, err := testTempFileWithContent([]byte("GTMCDC_KAFKA_BROKERS=myhost:10000"))
+	assert.Nil(t, err)
+	defer os.Remove(tmplog)
 
 	InitLogging(tmplog, "debug")
-	log.Info(tmpmsg)
+	log.Info("test logging")
+
 	f, err1 := os.Open(tmplog)
 	msg, err2 := ioutil.ReadAll(f)
 
 	assert.Nil(t, err1)
 	assert.Nil(t, err2)
-	assert.True(t, strings.Contains(string(msg), tmpmsg))
+	assert.True(t, strings.Contains(string(msg), "test logging"))
 }
 
 func Test_DoFilter_MockKafka(t *testing.T) {
@@ -83,6 +85,11 @@ func Test_DoFilter_MockKafka(t *testing.T) {
 
 	prevValues := getCounters(counters)
 
+	// the file contains 3 records
+	// #1 is good
+	// #2 cannot be parsed
+	// #3 is a TCOM, the mock producer will fail when this
+	//    message is published
 	fin, fout := InitInputAndOutput("testdata/test1.txt", nullFile())
 	DoFilter(fin, fout)
 
@@ -121,4 +128,16 @@ func nullFile() string {
 		return "NUL"
 	}
 	return "/dev/null"
+}
+
+func testTempFileWithContent(content []byte) (string, error) {
+	tmpfile, err := ioutil.TempFile("", "tmp_test")
+	if err != nil {
+		return "", err
+	}
+
+	_, _ = tmpfile.Write(content)
+	tmpfile.Close()
+
+	return tmpfile.Name(), nil
 }

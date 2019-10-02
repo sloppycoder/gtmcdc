@@ -15,25 +15,17 @@ func closeFile(f *os.File) {
 }
 
 func main() {
-	var inputFile, configFile string
-	var devMode bool
-	flag.StringVar(&inputFile, "i", "", "input file")
-	flag.StringVar(&configFile, "conf", pkg.DefaultConfigFile, "filter config file")
-	flag.BoolVar(&devMode, "dev", false, "Developer mode, internal use only.")
+	var inputFile, outputFile, envFile string
+	flag.StringVar(&inputFile, "i", "stdin", "input file")
+	flag.StringVar(&outputFile, "o", "stdout", "output file")
+	flag.StringVar(&envFile, "env", "", "config env file")
 	flag.Parse()
 
-	if os.Getenv("GTMCDC_DEVMODE") != "" {
-		devMode = true
-	}
-
-	conf := pkg.LoadConfig(configFile, devMode)
-	// input file from command line overrides config file
-	if inputFile != "" {
-		conf.InputFile = inputFile
-	}
+	conf := pkg.LoadConfig(envFile)
 
 	pkg.InitLogging(conf.LogFile, conf.LogLevel)
-	log.Infof("Starting filter with dev=%t, conf=%s, %v", devMode, configFile, conf)
+	log.Infof("Starting cdcfilter with conf=%s, i=%s, o=%s, %+v",
+		envFile, inputFile, outputFile, conf)
 
 	err := pkg.InitProducer(conf.KafkaBrokerList, conf.KafkaTopic)
 	if err != nil {
@@ -48,7 +40,7 @@ func main() {
 		}
 	}
 
-	fin, fout := pkg.InitInputAndOutput(conf.InputFile, conf.OutputFile)
+	fin, fout := pkg.InitInputAndOutput(inputFile, outputFile)
 	defer closeFile(fin)
 	defer closeFile(fout)
 
