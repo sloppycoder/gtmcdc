@@ -133,7 +133,7 @@ func LoadConfig(configFile string, devMode bool) *Config {
 	conf := Config{
 		KafkaBrokerList: "off",
 		PromHTTPAddr:    "off",
-		LogFile:         "filter.log",
+		LogFile:         "cdcfilter.log",
 		LogLevel:        "debug",
 	}
 
@@ -152,7 +152,7 @@ func LoadConfig(configFile string, devMode bool) *Config {
 	}
 
 	if conf.LogFile == "" {
-		conf.LogFile = "filter.log"
+		conf.LogFile = "cdcfilter.log"
 	}
 
 	if conf.LogLevel == "" {

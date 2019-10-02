@@ -66,6 +66,6 @@ To tear down the setup and cleanup everything
 ./repl_stop
 
 # run this only if you want to delete both A and B databases
-rm -rf A B filter.log
+rm -rf A B cdcfilter.log
 
 ```
