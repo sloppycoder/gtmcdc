@@ -34,7 +34,7 @@ cd repl_procedures
 
 # check replication filter log
 # the log should show the filter started with no errors 
-tail -f filter.log
+tail -f cdcfilter.log
 
 
 
