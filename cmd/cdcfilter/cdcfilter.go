@@ -36,9 +36,10 @@ func main() {
 	log.Infof("Starting filter with dev=%t, conf=%s, %v", devMode, configFile, conf)
 
 	err := pkg.InitProducer(conf.KafkaBrokerList, conf.KafkaTopic)
-	if err == nil {
-		defer pkg.CleanupProducer()
+	if err != nil {
+		log.Infof("Kafka producer not available. %v", err)
 	}
+	defer pkg.CleanupProducer()
 
 	if conf.PromHTTPAddr != "off" {
 		err = pkg.InitPromHTTP(conf.PromHTTPAddr)

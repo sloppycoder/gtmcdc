@@ -38,8 +38,8 @@ func PublishMessage(message string) error {
 
 func InitProducer(brokers, topic string) error {
 	brokerList := strings.Split(brokers, ",")
-	if len(brokerList) <= 1 || brokerList[0] == "off" || topic == "" {
-		return errors.New("invalid kafka broker list specified")
+	if len(brokerList) < 1 || brokerList[0] == "off" || topic == "" {
+		return errors.New("invalid kafka broker list or topic specified")
 	}
 
 	config := sarama.NewConfig()
@@ -57,6 +57,7 @@ func InitProducer(brokers, topic string) error {
 		return err
 	}
 
+	cdcTopic = topic
 	SetProducer(producer)
 
 	return nil
@@ -67,5 +68,5 @@ func SetProducer(producer sarama.SyncProducer) {
 }
 
 func IsKafkaAvailable() bool {
-	return (cdcProducer != nil)
+	return cdcProducer != nil
 }
