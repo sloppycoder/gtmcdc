@@ -1,9 +1,10 @@
 package gtmcdc
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_InitProducer(t *testing.T) {
@@ -16,7 +17,7 @@ func Test_InitProducer(t *testing.T) {
 }
 
 func Test_InitPromHttp(t *testing.T) {
-	err := InitPromHttp(":0")
+	err := InitPromHTTP(":0")
 	time.Sleep(100 * time.Millisecond) // slight delay to allow gather test coverage
 	assert.Nil(t, err)
 }

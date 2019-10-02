@@ -1,16 +1,19 @@
 package gtmcdc
 
 import (
+	"net/http"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	dto "github.com/prometheus/client_model/go"
-	"net/http"
 )
 
 var counters map[string]prometheus.Counter
 var histograms map[string]prometheus.Histogram
 
+// GetCounterValue returns the value of a counter
+// A new counter will be created if it does not exist already
 func GetCounterValue(name string) float64 {
 	counter, exists := counters[name]
 	if !exists {
@@ -22,6 +25,8 @@ func GetCounterValue(name string) float64 {
 	return pb.GetCounter().GetValue()
 }
 
+// IncrCounter increment a counter
+// A new counter will be created if it does not exist already
 func IncrCounter(name string) {
 	if counters == nil {
 		counters = map[string]prometheus.Counter{}
@@ -38,6 +43,8 @@ func IncrCounter(name string) {
 	counter.Inc()
 }
 
+// HistoObserve records an obseration for a histogram
+// A new histogram will be created if it does not exist already
 func HistoObserve(name string, value float64) {
 	if histograms == nil {
 		histograms = map[string]prometheus.Histogram{}
@@ -55,7 +62,9 @@ func HistoObserve(name string, value float64) {
 	histo.Observe(value)
 }
 
-func InitPromHttp(addr string) error {
+// InitPromHTTP starts the Http Listener that export the Prometheus metrics
+// that can be scraped by Prometheus
+func InitPromHTTP(addr string) error {
 	var err error
 
 	http.Handle("/metrics", promhttp.Handler())

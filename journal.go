@@ -3,12 +3,14 @@ package gtmcdc
 import (
 	"encoding/json"
 	"errors"
-	log "github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
+// OpCodes mapps 2 digit code in journal log to instruction names
 var OpCodes = map[string]string{
 	"00": "NULL",
 	"01": "PINI",
@@ -26,24 +28,25 @@ var OpCodes = map[string]string{
 	"13": "LGTRIG",
 }
 
+// Error Messages
 const (
 	ErrorNotHorologFormat = "input is not horolog time format"
 	ErrorInvalidRecord    = "invalid journal record format"
 )
 
-type Header struct {
+type header struct {
 	timestamp time.Time
 	pid       int16
 	clientPid int16
 }
 
-type Repl struct {
+type repl struct {
 	streamNum  int8
 	streamSeq  int
 	journalSeq int
 }
 
-type Transaction struct {
+type transaction struct {
 	token     string
 	tokenSeq  int
 	num       string
@@ -52,19 +55,22 @@ type Transaction struct {
 	tag       string
 }
 
-type Expr struct {
+type expr struct {
 	nodeFlags string
 	value     string
 }
 
+// JournalRecord represent content of a GT.M journal log entry
 type JournalRecord struct {
 	opcode string
-	header Header
-	repl   Repl
-	tran   Transaction
-	detail Expr
+	header header
+	repl   repl
+	tran   transaction
+	detail expr
 }
 
+// JournalEvent is an event published to Kafka that
+// is assoicated to a JournalRecord
 type JournalEvent struct {
 	Operand         string `json:"operand,omitempty"`
 	TransactionNum  string `json:"transaction_num,omitempty"`
@@ -76,8 +82,8 @@ type JournalEvent struct {
 	JournalSeq      int    `json:"journal_seq"`
 	Partners        string `json:"partners,omitempty"`
 	TransactionTag  string `json:"transaction_tag,omitempty"`
-	ProcessId       int16  `json:"pid,omitempty"`
-	ClientProcessId int16  `json:"client_pid,omitempty"`
+	ProcessID       int16  `json:"pid,omitempty"`
+	ClientProcessID int16  `json:"client_pid,omitempty"`
 	Node            string `json:"node,omitempty"`
 	Value           string `json:"value,omitempty"`
 }
@@ -92,9 +98,7 @@ func atoi(s string) int {
 	return i
 }
 
-//
-// parse a GT.M journal extract text string into JournalRecord
-//
+// Parse a GT.M journal extract text string into JournalRecord
 func Parse(raw string) (*JournalRecord, error) {
 	log.Debugf("parsing:%s", raw)
 
@@ -110,10 +114,10 @@ func Parse(raw string) (*JournalRecord, error) {
 
 	rec := JournalRecord{
 		opcode: OpCodes[s[0]],
-		header: Header{},
-		repl:   Repl{},
-		tran:   Transaction{},
-		detail: Expr{},
+		header: header{},
+		repl:   repl{},
+		tran:   transaction{},
+		detail: expr{},
 	}
 
 	rec.header.pid = int16(atoi(s[3]))
@@ -161,7 +165,8 @@ func Parse(raw string) (*JournalRecord, error) {
 	return &rec, nil
 }
 
-func (rec *JournalRecord) Json() string {
+// JSON representation of a journal log entry
+func (rec *JournalRecord) JSON() string {
 	event := JournalEvent{
 		Operand:        rec.opcode,
 		TransactionNum: rec.tran.num,

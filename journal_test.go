@@ -2,8 +2,9 @@ package gtmcdc
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_Parse_Horolog_DAte(t *testing.T) {
@@ -54,7 +55,7 @@ func Test_JournalRecord_Json(t *testing.T) {
 	rec, err := Parse(`05\65282,59700\28\0\0\28\0\0\0\0\^acc("00027")="300.00"`)
 	assert.Nil(t, err)
 
-	jstr := rec.Json()
+	jstr := rec.JSON()
 	expected := `{"operand":"SET","transaction_num":"28","token_seq":28,"update_num":0,"stream_num":0,"stream_seq":0,"journal_seq":0,"node":"^acc(\"00027\")","value":"300.00"}`
 	assert.Equal(t, expected, jstr)
 }

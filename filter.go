@@ -3,19 +3,22 @@ package gtmcdc
 import (
 	"bufio"
 	"fmt"
-	"github.com/JeremyLoy/config"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/JeremyLoy/config"
+	log "github.com/sirupsen/logrus"
 )
 
+// DefaultConfigFile is the default configuration file name
 const DefaultConfigFile = "filter.env"
 
+// Config stores the filter configurations
 type Config struct {
 	KafkaBrokerList string `config:"GTMCDC_KAFKA_BROKERS"`
 	KafkaTopic      string `config:"GTMCDC_KAFKA_TOPIC"`
-	PromHttpAddr    string `config:"GTMCDC_PROM_HTTP_ADDR"`
+	PromHTTPAddr    string `config:"GTMCDC_PROM_HTTP_ADDR"`
 	LogFile         string `config:"GTMCDC_LOG"`
 	LogLevel        string `config:"GTMCDC_LOG_LEVEL"`
 	InputFile       string `config:"GTMCDC_INPUT"`
@@ -23,9 +26,8 @@ type Config struct {
 	DevMode         bool   `config:"GTMCDC_DEVMODE"`
 }
 
-//
-// the main processing loop that reads journal extract and publish messages
-//
+// DoFilter is the main processing loop that
+//reads journal extract and publish messages
 func DoFilter(fin, fout *os.File) {
 	scanner := bufio.NewScanner(fin)
 	for scanner.Scan() {
@@ -39,7 +41,7 @@ func DoFilter(fin, fout *os.File) {
 		} else {
 			IncrCounter("lines_parsed")
 
-			jsonstr := rec.Json()
+			jsonstr := rec.JSON()
 			log.Debugf("line parsed to json %s", jsonstr)
 
 			if IsKafkaAvailable() {
@@ -68,6 +70,7 @@ func DoFilter(fin, fout *os.File) {
 	}
 }
 
+// InitLogging initialize log output based on configuration
 func InitLogging(logFile, logLevel string) {
 	var file *os.File
 	var err error
@@ -92,6 +95,7 @@ func InitLogging(logFile, logLevel string) {
 	log.SetLevel(level)
 }
 
+// InitInputAndOutput initialize input and output files for the filter
 func InitInputAndOutput(inputFile, outputFile string) (*os.File, *os.File) {
 	// initialize input and output files for this filter
 	fin := os.Stdin
@@ -123,10 +127,12 @@ func InitInputAndOutput(inputFile, outputFile string) (*os.File, *os.File) {
 	return fin, fout
 }
 
+// LoadConfig loads the filter configurations from file
+// devMode flags will override configurations file
 func LoadConfig(configFile string, devMode bool) *Config {
 	conf := Config{
 		KafkaBrokerList: "off",
-		PromHttpAddr:    "off",
+		PromHTTPAddr:    "off",
 		LogFile:         "filter.log",
 		LogLevel:        "debug",
 	}

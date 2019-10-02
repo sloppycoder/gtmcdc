@@ -2,9 +2,10 @@ package gtmcdc
 
 import (
 	"errors"
+	"strings"
+
 	"github.com/Shopify/sarama"
 	log "github.com/sirupsen/logrus"
-	"strings"
 )
 
 var cdcProducer sarama.SyncProducer
@@ -66,9 +67,5 @@ func SetProducer(producer sarama.SyncProducer) {
 }
 
 func IsKafkaAvailable() bool {
-	if cdcProducer == nil {
-		return false
-	} else {
-		return true
-	}
+	return (cdcProducer != nil)
 }

@@ -2,13 +2,14 @@ package gtmcdc
 
 import (
 	"errors"
-	log "github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/Shopify/sarama/mocks"
 )
@@ -33,7 +34,7 @@ func Test_InitInputAndOutput(t *testing.T) {
 func Test_LoadConfig_DevMode(t *testing.T) {
 	conf := LoadConfig("_not_exist", true)
 	assert.Equal(t, "off", conf.KafkaBrokerList)
-	assert.Equal(t, "off", conf.PromHttpAddr)
+	assert.Equal(t, "off", conf.PromHTTPAddr)
 	assert.Equal(t, "debug", conf.LogLevel)
 }
 
@@ -44,7 +45,7 @@ func Test_LoadConfig_Default(t *testing.T) {
 	conf := LoadConfig("./filter.env", false)
 
 	assert.Equal(t, brokers, conf.KafkaBrokerList)        // env overrides config file
-	assert.Equal(t, "localhost:10101", conf.PromHttpAddr) // from config file
+	assert.Equal(t, "localhost:10101", conf.PromHTTPAddr) // from config file
 }
 
 func Test_InitLogging(t *testing.T) {
@@ -118,7 +119,6 @@ func deltaCounters(prev, current []float64) ([]float64, error) {
 func nullFile() string {
 	if runtime.GOOS == "widnows" {
 		return "NUL"
-	} else {
-		return "/dev/null"
 	}
+	return "/dev/null"
 }
