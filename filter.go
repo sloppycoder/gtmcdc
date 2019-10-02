@@ -9,6 +9,7 @@ import (
 
 	"github.com/caarlos0/env/v6"
 	"github.com/joho/godotenv"
+	"github.com/mattn/go-isatty"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -17,7 +18,7 @@ type Config struct {
 	KafkaBrokerList string `env:"GTMCDC_KAFKA_BROKERS" envDefault:"off"`
 	KafkaTopic      string `env:"GTMCDC_KAFKA_TOPIC" envDefault:"cdc-test"`
 	PromHTTPAddr    string `env:"GTMCDC_PROM_HTTP_ADDR" envDefault:"off"`
-	LogFile         string `env:"GTMCDC_LOG" envDefault:"cdcfilter.log"`
+	LogFile         string `env:"GTMCDC_LOG" envDefault:"stderr"`
 	LogLevel        string `env:"GTMCDC_LOG_LEVEL" envDefault:"debug"`
 }
 
@@ -64,7 +65,7 @@ func DoFilter(fin, fout *os.File) {
 
 				err = PublishMessage(jsonstr)
 				if err != nil {
-					log.Warn("Unable to publish message for journal record")
+					log.Warnf("Unable to publish message for journal record. %+v", err)
 					IncrCounter("lines_parsed_but_not_published")
 				} else {
 					IncrCounter("lines_parsed_and_published")
@@ -89,6 +90,10 @@ func DoFilter(fin, fout *os.File) {
 func InitLogging(logFile, logLevel string) {
 	var file *os.File
 	var err error
+
+	if logFile == "stderr" && !isatty.IsTerminal(os.Stdout.Fd()) {
+		logFile = "cdcfilter.log"
+	}
 
 	if strings.EqualFold(logFile, "stderr") {
 		file = os.Stderr

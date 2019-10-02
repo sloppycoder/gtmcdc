@@ -52,19 +52,22 @@ func Test_LoadConfig_Override(t *testing.T) {
 }
 
 func Test_InitLogging(t *testing.T) {
-	tmplog, err := testTempFileWithContent([]byte("GTMCDC_KAFKA_BROKERS=myhost:10000"))
+	const LogMsg = "test logging"
+
+	tmplog, err := testTempFileWithContent([]byte(""))
 	assert.Nil(t, err)
 	defer os.Remove(tmplog)
 
 	InitLogging(tmplog, "debug")
-	log.Info("test logging")
+	log.Info(LogMsg)
 
-	f, err1 := os.Open(tmplog)
-	msg, err2 := ioutil.ReadAll(f)
+	logf, err := os.Open(tmplog)
+	assert.Nil(t, err)
 
-	assert.Nil(t, err1)
-	assert.Nil(t, err2)
-	assert.True(t, strings.Contains(string(msg), "test logging"))
+	bytes, err := ioutil.ReadAll(logf)
+	assert.Nil(t, err)
+
+	assert.True(t, strings.Contains(string(bytes), LogMsg))
 }
 
 func Test_DoFilter_MockKafka(t *testing.T) {
