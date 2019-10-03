@@ -46,5 +46,5 @@ func main() {
 
 	pkg.DoFilter(fin, fout)
 
-	log.Error("done")
+	log.Info("done")
 }

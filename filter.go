@@ -51,7 +51,7 @@ func DoFilter(fin, fout *os.File) {
 		IncrCounter("lines_read_from_input")
 
 		// log with fields
-		logf := log.WithFields(log.Fields{"journal": line})
+		logf := log.WithField("journal", line)
 
 		rec, err := Parse(line)
 		if err != nil {

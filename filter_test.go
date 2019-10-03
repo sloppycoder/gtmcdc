@@ -44,7 +44,7 @@ func Test_LoadConfig_Override(t *testing.T) {
 	assert.Nil(t, err)
 	defer os.Remove(tmpFile)
 
-	os.Setenv("GTMCDC_ENV", tmpFile)
+	_ = os.Setenv("GTMCDC_ENV", tmpFile)
 	conf := LoadConfig("")
 
 	assert.Equal(t, "myhost:10000", conf.KafkaBrokerList) // value from tmp file
@@ -140,7 +140,7 @@ func testTempFileWithContent(content []byte) (string, error) {
 	}
 
 	_, _ = tmpfile.Write(content)
-	tmpfile.Close()
+	_ = tmpfile.Close()
 
 	return tmpfile.Name(), nil
 }
