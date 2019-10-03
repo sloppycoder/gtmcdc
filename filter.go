@@ -36,7 +36,7 @@ func LoadConfig(envFile string) *Config {
 
 	conf := Config{}
 	if err := env.Parse(&conf); err != nil {
-		log.Warnf("%+v\n", err)
+		log.Warnf("%+v", err)
 	}
 
 	return &conf
@@ -50,22 +50,25 @@ func DoFilter(fin, fout *os.File) {
 		line := scanner.Text()
 		IncrCounter("lines_read_from_input")
 
+		// log with fields
+		logf := log.WithFields(log.Fields{"journal": line})
+
 		rec, err := Parse(line)
 		if err != nil {
-			log.Info("Unable to parse record")
+			logf.Info("Unable to parse record")
 			IncrCounter("lines_parse_error")
 		} else {
 			IncrCounter("lines_parsed")
 
 			jsonstr := rec.JSON()
-			log.Debugf("line parsed to json %s", jsonstr)
+			logf.Debugf("line parsed to json %s", jsonstr)
 
 			if IsKafkaAvailable() {
 				start := time.Now()
 
 				err = PublishMessage(jsonstr)
 				if err != nil {
-					log.Warnf("Unable to publish message for journal record. %+v", err)
+					logf.Warnf("Unable to publish message for journal record. %+v", err)
 					IncrCounter("lines_parsed_but_not_published")
 				} else {
 					IncrCounter("lines_parsed_and_published")
@@ -78,7 +81,7 @@ func DoFilter(fin, fout *os.File) {
 			_, err = fmt.Fprintln(fout, line)
 			if err != nil {
 				IncrCounter("lines_output_write_error")
-				log.Infof("Unable to write to output")
+				logf.Infof("Unable to write to output")
 			} else {
 				IncrCounter("lines_output_written")
 			}

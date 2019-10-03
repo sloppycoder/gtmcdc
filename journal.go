@@ -130,6 +130,9 @@ func Parse(raw string) (*JournalRecord, error) {
 		rec.header.clientPid = int16(atoi(s[4]))
 	}
 
+	// log with fields
+	logf := log.WithFields(log.Fields{"journal": raw})
+
 	switch rec.opcode {
 	case "SET", "KILL", "ZKILL", "ZTRIG":
 		rec.tran.tokenSeq, rec.tran.updateNum = atoi(s[5]), atoi(s[8])
@@ -156,10 +159,10 @@ func Parse(raw string) (*JournalRecord, error) {
 		}
 
 	case "NULL", "EOF", "LGTRIG", "PINI", "PFIN":
-		log.Debugf("journal entry ignored: %s", raw)
+		logf.Debug("journal entry ignored")
 
 	default:
-		log.Warnf("unknown journal entry: %s", raw)
+		logf.Info("unknown journal entry")
 	}
 
 	return &rec, nil
