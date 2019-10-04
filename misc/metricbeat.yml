@@ -1,0 +1,12 @@
+metricbeat.modules:
+- module: prometheus
+  period: 10s
+  hosts: ["localhost:10101"]
+  metrics_path: /metrics
+
+output:
+  # console:
+  #   pretty: true
+  elasticsearch:
+    hosts: ["localhost:9200"]
+

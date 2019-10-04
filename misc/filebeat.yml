@@ -1,0 +1,18 @@
+filebeat.inputs:
+- type: log
+
+  enabled: true
+
+  paths:
+    - ${HOME}/Projects/git/gtmcdc/repl_procedures/cdcfilter.log
+
+  # default messages @timestamp, level, @message 
+  # are written by the application itself
+  # no need to extract procssing here
+  json.keys_under_root: true
+  
+output:
+  # console:
+  #   pretty: true
+  elasticsearch:
+    hosts: ["localhost:9200"]
