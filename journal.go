@@ -100,7 +100,8 @@ func atoi(s string) int {
 
 // Parse a GT.M journal extract text string into JournalRecord
 func Parse(raw string) (*JournalRecord, error) {
-	log.Debugf("parsing:%s", raw)
+	// log with fields
+	logf := log.WithFields(log.Fields{"journal": raw})
 
 	s := strings.Split(raw, "\\")
 	if len(s) < 5 {
@@ -129,9 +130,6 @@ func Parse(raw string) (*JournalRecord, error) {
 	} else {
 		rec.header.clientPid = int16(atoi(s[4]))
 	}
-
-	// log with fields
-	logf := log.WithFields(log.Fields{"journal": raw})
 
 	switch rec.opcode {
 	case "SET", "KILL", "ZKILL", "ZTRIG":

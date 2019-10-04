@@ -100,14 +100,21 @@ func InitLogging(logFile, logLevel string) {
 
 	if strings.EqualFold(logFile, "stderr") {
 		file = os.Stderr
+		log.SetFormatter(&log.TextFormatter{})
 	} else {
 		file, err = os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
 			log.Fatalf("can't open log file for write.")
 		}
+		log.SetFormatter(&log.JSONFormatter{
+			FieldMap: log.FieldMap{
+				log.FieldKeyTime: "@timestamp",
+				log.FieldKeyMsg:  "@message",
+			}})
 	}
 
 	log.SetOutput(file)
+
 	level, err := log.ParseLevel(logLevel)
 	if err == nil {
 		log.SetLevel(level)
