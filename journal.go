@@ -108,7 +108,7 @@ func Parse(raw string) (*JournalRecord, error) {
 		return nil, errors.New(ErrorInvalidRecord)
 	}
 
-	ts, err := parseHorologTime(s[1])
+	ts, err := parseHorologTime(s[1], time.Now().Location())
 	if err != nil {
 		return nil, err
 	}
@@ -132,6 +132,9 @@ func Parse(raw string) (*JournalRecord, error) {
 	}
 
 	switch rec.opcode {
+	case "":
+		// ignore an empty line
+
 	case "SET", "KILL", "ZKILL", "ZTRIG":
 		rec.tran.tokenSeq, rec.tran.updateNum = atoi(s[5]), atoi(s[8])
 		rec.repl.streamNum, rec.repl.streamSeq = int8(atoi(s[6])), atoi(s[7])
@@ -157,7 +160,7 @@ func Parse(raw string) (*JournalRecord, error) {
 		}
 
 	case "NULL", "EOF", "LGTRIG", "PINI", "PFIN":
-		logf.Debug("journal entry ignored")
+		logf.Debugf("journal entry ignored. %s", rec.opcode)
 
 	default:
 		logf.Info("unknown journal entry")
@@ -194,12 +197,10 @@ func (rec *JournalRecord) JSON() string {
 // ddddd is the number of days after January 1, 1841
 // sssss is number of seconds after the midnight of the day
 //
-func parseHorologTime(horolog string) (time.Time, error) {
-	now := time.Now()
-
+func parseHorologTime(horolog string, loc *time.Location) (time.Time, error) {
 	s := strings.Split(horolog, ",")
 	if len(s) != 2 {
-		return now, errors.New(ErrorNotHorologFormat)
+		return time.Unix(0, 0), errors.New(ErrorNotHorologFormat)
 	}
 
 	day, err1 := strconv.Atoi(s[0])
@@ -207,10 +208,10 @@ func parseHorologTime(horolog string) (time.Time, error) {
 	if err1 != nil || err2 != nil ||
 		day < 0 || day > 2980013 ||
 		sec < 0 || sec > 86399 {
-		return now, errors.New(ErrorNotHorologFormat)
+		return time.Unix(0, 0), errors.New(ErrorNotHorologFormat)
 	}
 
-	horologBaseTime := time.Date(1841, 1, 1, 0, 0, 0, 0, now.Location())
+	horologBaseTime := time.Date(1841, 1, 1, 0, 0, 0, 0, loc)
 	seconds := day*86400 + sec
 
 	return horologBaseTime.Add(time.Duration(seconds) * time.Second), nil

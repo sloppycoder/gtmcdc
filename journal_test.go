@@ -3,16 +3,20 @@ package gtmcdc
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_Parse_Horolog_DAte(t *testing.T) {
-	tt, err := parseHorologTime("0,0")
+	loc, err := time.LoadLocation("Asia/Singapore")
+	assert.Nil(t, err)
+
+	tt, err := parseHorologTime("0,0", loc)
 	assert.Nil(t, err)
 	assert.Equal(t, 1841, tt.Year(), "year incorrect")
 
-	tt, err = parseHorologTime("65282,59700")
+	tt, err = parseHorologTime("65282,59700", loc)
 	fmt.Println(tt)
 	assert.Nil(t, err)
 	assert.Equal(t, 2019, tt.Year())
@@ -22,10 +26,10 @@ func Test_Parse_Horolog_DAte(t *testing.T) {
 	assert.Equal(t, 39, tt.Minute())
 	assert.Equal(t, 0, tt.Nanosecond())
 
-	_, err = parseHorologTime(",")
+	_, err = parseHorologTime(",", loc)
 	assert.NotNil(t, err)
 
-	_, err = parseHorologTime("29800130,1234")
+	_, err = parseHorologTime("29800130,1234", loc)
 	assert.NotNil(t, err)
 }
 
