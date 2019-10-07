@@ -72,20 +72,21 @@ type JournalRecord struct {
 // JournalEvent is an event published to Kafka that
 // is assoicated to a JournalRecord
 type JournalEvent struct {
-	Operand         string `json:"operand,omitempty"`
-	TransactionNum  string `json:"transaction_num,omitempty"`
-	Token           string `json:"token,omitempty"`
-	TokenSeq        int    `json:"token_seq"`
-	UpdateNum       int    `json:"update_num"`
-	StreamNum       int8   `json:"stream_num"`
-	StreamSeq       int    `json:"stream_seq"`
-	JournalSeq      int    `json:"journal_seq"`
-	Partners        string `json:"partners,omitempty"`
-	TransactionTag  string `json:"transaction_tag,omitempty"`
-	ProcessID       int16  `json:"pid,omitempty"`
-	ClientProcessID int16  `json:"client_pid,omitempty"`
-	Node            string `json:"node,omitempty"`
-	Value           string `json:"value,omitempty"`
+	Operand         string    `json:"operand,omitempty"`
+	TransactionNum  string    `json:"transaction_num,omitempty"`
+	Token           string    `json:"token,omitempty"`
+	TokenSeq        int       `json:"token_seq"`
+	UpdateNum       int       `json:"update_num"`
+	StreamNum       int8      `json:"stream_num"`
+	StreamSeq       int       `json:"stream_seq"`
+	JournalSeq      int       `json:"journal_seq"`
+	Partners        string    `json:"partners,omitempty"`
+	TransactionTag  string    `json:"transaction_tag,omitempty"`
+	ProcessID       int16     `json:"pid,omitempty"`
+	ClientProcessID int16     `json:"client_pid,omitempty"`
+	Node            string    `json:"node,omitempty"`
+	Value           string    `json:"value,omitempty"`
+	TimeStamp       time.Time `json:"time_stamp,omitempty"`
 }
 
 func atoi(s string) int {
@@ -182,6 +183,7 @@ func (rec *JournalRecord) JSON() string {
 		JournalSeq:     rec.repl.journalSeq,
 		Node:           rec.detail.nodeFlags,
 		Value:          rec.detail.value,
+		TimeStamp:      rec.header.timestamp,
 	}
 
 	bytes, err := json.Marshal(&event)

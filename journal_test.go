@@ -60,7 +60,9 @@ func Test_JournalRecord_Json(t *testing.T) {
 	assert.Nil(t, err)
 
 	jstr := rec.JSON()
-	expected := `{"operand":"SET","transaction_num":"28","token_seq":28,"update_num":0,"stream_num":0,"stream_seq":0,"journal_seq":0,"node":"^acc(\"00027\")","value":"300.00"}`
+	expected := `{"operand":"SET","transaction_num":"28","token_seq":28,"update_num":0,` +
+		`"stream_num":0,"stream_seq":0,"journal_seq":0,"node":"^acc(\"00027\")","value":"300.00",` +
+		`"time_stamp":"2019-09-27T17:39:35+08:00"}`
 	assert.Equal(t, expected, jstr)
 }
 
