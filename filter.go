@@ -94,7 +94,7 @@ func InitLogging(logFile, logLevel string) {
 	var file *os.File
 	var err error
 
-	if logFile == "stderr" && !isatty.IsTerminal(os.Stdout.Fd()) {
+	if logFile == "stderr" || !isatty.IsTerminal(os.Stdout.Fd()) {
 		logFile = "cdcfilter.log"
 	}
 
