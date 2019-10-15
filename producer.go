@@ -2,10 +2,9 @@ package gtmcdc
 
 import (
 	"errors"
-	"strings"
-
 	"github.com/Shopify/sarama"
 	log "github.com/sirupsen/logrus"
+	"strings"
 )
 
 var cdcProducer sarama.SyncProducer
@@ -46,6 +45,7 @@ func InitProducer(brokers, topic string) error {
 	config.Producer.RequiredAcks = sarama.WaitForLocal
 	config.Producer.Retry.Max = 10
 	config.Producer.Return.Successes = true
+	config.Version = sarama.MaxVersion
 
 	// On the broker side, you may want to change the following settings to get
 	// stronger consistency guarantees:

@@ -3,6 +3,7 @@ package gtmcdc
 import (
 	"encoding/json"
 	"errors"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -84,8 +85,10 @@ type JournalEvent struct {
 	TransactionTag  string    `json:"transaction_tag,omitempty"`
 	ProcessID       int16     `json:"pid,omitempty"`
 	ClientProcessID int16     `json:"client_pid,omitempty"`
-	Node            string    `json:"node,omitempty"`
-	Value           string    `json:"value,omitempty"`
+	Global          string    `json:"global,omitempty"`
+	Key             string    `json:"key,omitempty"`
+	Subscripts      []string  `json:"subscripts,omitempty"`
+	NodeValues      []string  `json:"node_values,omitempty"`
 	TimeStamp       time.Time `json:"time_stamp,omitempty"`
 }
 
@@ -172,6 +175,12 @@ func Parse(raw string) (*JournalRecord, error) {
 
 // JSON representation of a journal log entry
 func (rec *JournalRecord) JSON() string {
+	values := strings.Split(rec.detail.value, "|")
+	r, err := parseNodeFlags(rec.detail.nodeFlags)
+	if err != nil {
+		return ""
+	}
+
 	event := JournalEvent{
 		Operand:        rec.opcode,
 		TransactionNum: rec.tran.num,
@@ -181,8 +190,10 @@ func (rec *JournalRecord) JSON() string {
 		StreamNum:      rec.repl.streamNum,
 		StreamSeq:      rec.repl.streamSeq,
 		JournalSeq:     rec.repl.journalSeq,
-		Node:           rec.detail.nodeFlags,
-		Value:          rec.detail.value,
+		Global:         r[0],
+		Key:            r[1],
+		Subscripts:     r[2:],
+		NodeValues:     values,
 		TimeStamp:      rec.header.timestamp,
 	}
 
@@ -217,4 +228,27 @@ func parseHorologTime(horolog string, loc *time.Location) (time.Time, error) {
 	seconds := day*86400 + sec
 
 	return horologBaseTime.Add(time.Duration(seconds) * time.Second), nil
+}
+
+var nodeRegex *regexp.Regexp
+
+func parseNodeFlags(node string) ([]string, error) {
+	if nodeRegex == nil {
+		nodeRegex = regexp.MustCompile(`\^(?P<global>.*?)\((?P<index>.+)\)`)
+	}
+
+	m := nodeRegex.FindStringSubmatch(node)
+	if m == nil || len(m) < 2 {
+		return nil, errors.New("invalid node")
+	}
+
+	subscripts := strings.Split(m[2], ",")
+	if subscripts == nil || len(m) < 1 {
+		return nil, errors.New("invalid node")
+	}
+
+	ret := []string{strings.ToUpper(m[1]), subscripts[0]}
+	ret = append(ret, subscripts[1:]...)
+
+	return ret, nil
 }

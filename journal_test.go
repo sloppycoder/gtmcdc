@@ -60,9 +60,7 @@ func Test_JournalRecord_Json(t *testing.T) {
 	assert.Nil(t, err)
 
 	jstr := rec.JSON()
-	expected := `{"operand":"SET","transaction_num":"28","token_seq":28,"update_num":0,` +
-		`"stream_num":0,"stream_seq":0,"journal_seq":0,"node":"^acc(\"00027\")","value":"300.00",` +
-		`"time_stamp":"2019-09-27T17:39:35+08:00"}`
+	expected := "{\"operand\":\"SET\",\"transaction_num\":\"28\",\"token_seq\":28,\"update_num\":0,\"stream_num\":0,\"stream_seq\":0,\"journal_seq\":0,\"global\":\"acc\",\"key\":\"\\\"00027\\\"\",\"value\":[\"300.00\"],\"time_stamp\":\"2019-09-27T17:39:35+08:00\"}"
 	assert.Equal(t, expected, jstr)
 }
 
@@ -72,4 +70,37 @@ func Test_atli(t *testing.T) {
 
 	i = atoi("xx")
 	assert.Equal(t, 0, i)
+}
+
+func Test_parseNodeFlags(t *testing.T) {
+	r, err := parseNodeFlags("^ACN(5877000047,51)")
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(r))
+	assert.Equal(t, "ACN", r[0])
+	assert.Equal(t, "5877000047", r[1])
+	assert.Equal(t, "51", r[2])
+
+	r, err = parseNodeFlags("^ACN(5877000047)")
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(r))
+	assert.Equal(t, "ACN", r[0])
+	assert.Equal(t, "5877000047", r[1])
+
+	r, err = parseNodeFlags("^acn(5877000047,51,1245)")
+	assert.Nil(t, err)
+	assert.Equal(t, 4, len(r))
+	assert.Equal(t, "ACN", r[0])
+	assert.Equal(t, "5877000047", r[1])
+	assert.Equal(t, "51", r[2])
+	assert.Equal(t, "1245", r[3])
+
+	r, err = parseNodeFlags("^ACN()")
+	assert.NotNil(t, err)
+
+	r, err = parseNodeFlags("garbage")
+	assert.NotNil(t, err)
+
+	r, err = parseNodeFlags("")
+	assert.NotNil(t, err)
+
 }
