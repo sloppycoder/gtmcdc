@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# create the sink to get data from KSQL stream and write to MongoDB
+curl -X PUT http://localhost:8083/connectors/mongodb-sink-1/config -H "Content-Type: application/json" -d@sink.json

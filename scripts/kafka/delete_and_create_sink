@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# do not use, place holder only
+
+curl -X DELETE http://localhost:8083/connectors/mongodb-sink-1
+sleep 2
+
+$CONFLUENT_HOME/bin/kafka-topics --bootstrap-server localhost:9092  --delete --topic profile-events
+sleep 1
+
+$CONFLUENT_HOME/bin/kafka-topics --bootstrap-server localhost:9092  --delete --topic profile-events
+sleep 1
+
+$CONFLUENT_HOME/bin/kafka-topics --bootstrap-server localhost:9092  --delete --topic profile-events-bad
+sleep 1
+
+$CONFLUENT_HOME/bin/kafka-topics --bootstrap-server localhost:9092  --delete --topic profile-events-bad
+sleep 1
+
+curl -X PUT http://localhost:8083/connectors/mongodb-sink-1/config -H "Content-Type: application/json" -d@sink.json

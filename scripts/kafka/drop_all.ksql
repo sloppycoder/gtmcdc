@@ -1,0 +1,8 @@
+terminate query CSAS_MONGOSINK1_1;
+terminate query CSAS_ACN_UPDATES_2;
+terminate query CSAS_ACNUPDATES_0;
+terminate query CSAS_MONGO_SINK_1_3;
+
+drop stream ACN_UPDATES;
+drop stream MONGO_SINK_1;
+drop stream PROFILE_RAW;

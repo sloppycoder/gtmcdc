@@ -1,0 +1,20 @@
+{
+  "name":"mongodb-sink-1",
+  "connector.class":"com.mongodb.kafka.connect.MongoSinkConnector",
+  "tasks.max":"1",
+  "topics":"mongo_sink_1",
+  "connection.uri":"mongodb://dev:dev@localhost:27017/?authSource=dev",
+  "database":"dev",
+  "collection":"accounts",
+  "key.converter":"org.apache.kafka.connect.json.JsonConverter",
+  "key.converter.schemas.enable":false,
+  "value.converter":"org.apache.kafka.connect.json.JsonConverter",
+  "value.converter.schemas.enable":false,
+  "document.id.strategy": "com.mongodb.kafka.connect.sink.processor.id.strategy.PartialValueStrategy",
+  "value.projection.list": "accountId",
+  "value.projection.type": "whitelist",
+  "writemodel.strategy": "com.mongodb.kafka.connect.sink.writemodel.strategy.ReplaceOneBusinessKeyStrategy",
+  "errors.tolerance": "all",
+  "errors.deadletterqueue.topic.name": "mongo_sink_1_bad",
+  "errors.deadletterqueue.topic.replication.factor": "1"
+}

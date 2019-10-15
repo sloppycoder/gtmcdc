@@ -1,0 +1,32 @@
+-- raw events from FIS Profile
+CREATE STREAM profile_raw
+ (
+ operand varchar,
+ transaction_num varchar,
+ global varchar,
+ key varchar,
+ subscripts array<varchar>,
+ node_values array<varchar>
+ )
+ WITH (KAFKA_TOPIC='gtmraw', PARTITIONS=1, VALUE_FORMAT='JSON');
+
+
+-- filter down the raw events to only account balance update
+CREATE STREAM acn_updates AS
+SELECT * FROM profile_raw
+  WHERE operand = 'SET' and global = 'ACN' and subscripts[0] = '51';
+
+
+-- to be consumed by MongoDB Kafka Connector
+CREATE STREAM "mongo_sink_1" AS
+SELECT
+  key 							    AS "accountId",
+  CONCAT('Account ', key) 	 	    AS "nickname",
+  '1122' 					 	    AS "prodCode",
+  IFNULL(node_values[0], '0.00')    AS "ledgerBalance",
+  'THB'  						    AS "currency",
+  '0'	 						    AS "Status",
+  ROWTIME						    AS "statusLastUpdated"
+FROM acn_updates
+  WHERE operand = 'SET' and global = 'ACN' and subscripts[0] = '51';
+
