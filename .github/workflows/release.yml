@@ -22,7 +22,7 @@ jobs:
     - name: Build
       run: |
         go test -v
-        go build -o scripts/cdcfilter -v cmd/cdcfilter
+        go build -o scripts/cdcfilter ./cmd/cdcfilter/
         tar czf cdcfilter-scripts.tar.gz scripts
 
     - name: Upload artifacts
