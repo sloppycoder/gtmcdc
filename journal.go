@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // OpCodes mapps 2 digit code in journal log to instruction names
@@ -112,7 +111,7 @@ func Parse(raw string) (*JournalRecord, error) {
 		return nil, errors.New(ErrorInvalidRecord)
 	}
 
-	ts, err := Horolog2Timestamp(s[1], time.Local)
+	ts, err := Horolog2Timestamp(s[1])
 	if err != nil {
 		return nil, err
 	}
@@ -214,13 +213,14 @@ func (rec *JournalRecord) JSON() (string, error) {
 
 // parse a timestamp in GT.M $HOROLOG format, ddddd,sssss format
 // returns a timestamp of int64 that is number of seconds since
-// Unix epoch time local time
+// 1971/1/1.
 //
 // ddddd is the number of days after January 1, 1841
 // sssss is number of seconds after the midnight of the day
 //
+// no timezone is used here
 // date prior to 1971/1/1 will return error
-func Horolog2Timestamp(horolog string, loc *time.Location) (int64, error) {
+func Horolog2Timestamp(horolog string) (int64, error) {
 	s := strings.Split(horolog, ",")
 	if s == nil {
 		return -1, errors.New(ErrorNotHorologFormat)
@@ -244,10 +244,7 @@ func Horolog2Timestamp(horolog string, loc *time.Location) (int64, error) {
 		return -1, errors.New(ErrorNotHorologFormat)
 	}
 
-	_, offset := time.Now().In(loc).Zone()
-	// 47117 is days since 1840/1/1
-	seconds := (day-47117)*86400 + sec - offset
-
+	seconds := (day-47117)*86400 + sec
 	if seconds < 0 {
 		return -1, errors.New(ErrorDatePriorTo1971)
 	}
