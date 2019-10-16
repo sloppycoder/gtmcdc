@@ -21,24 +21,24 @@ func Test_Horolog2UnixTime(t *testing.T) {
 	// the timestamp value will be negative
 	// Unix system cannot handle this sort of thing
 	// 47118 should get a positive timestamp value in any timezone
-	ts, err := Horolog2UnixTime("47118", loc)
+	ts, err := Horolog2Timestamp("47118", loc)
 	assert.Nil(t, err)
 	assert.Equal(t, 24*3600-offset, ts)
 
 	expected, _ := time.ParseInLocation("2006-01-02 15:04:05", "2019-09-26 16:35:00", loc)
-	ts, err = Horolog2UnixTime("65282,59700", loc)
+	ts, err = Horolog2Timestamp("65282,59700", loc)
 	assert.Nil(t, err)
 	assert.Equal(t, expected.Unix(), ts)
 
 	expected, _ = time.ParseInLocation("2006-01-02 15:04:05", "2019-10-04 00:24:45", loc)
-	ts, err = Horolog2UnixTime("65290,1485", loc)
+	ts, err = Horolog2Timestamp("65290,1485", loc)
 	assert.Nil(t, err)
 	assert.Equal(t, expected.Unix(), ts)
 
-	_, err = Horolog2UnixTime(",", loc)
+	_, err = Horolog2Timestamp(",", loc)
 	assert.NotNil(t, err)
 
-	_, err = Horolog2UnixTime("29800130,1234", loc)
+	_, err = Horolog2Timestamp("29800130,1234", loc)
 	assert.NotNil(t, err)
 }
 
