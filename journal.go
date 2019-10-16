@@ -3,12 +3,11 @@ package gtmcdc
 import (
 	"encoding/json"
 	"errors"
+	log "github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // OpCodes mapps 2 digit code in journal log to instruction names
@@ -33,10 +32,11 @@ var OpCodes = map[string]string{
 const (
 	ErrorNotHorologFormat = "input is not horolog time format"
 	ErrorInvalidRecord    = "invalid journal record format"
+	ErrorDatePriorTo1971  = "date is prior to 1971/1/1"
 )
 
 type header struct {
-	timestamp time.Time
+	timestamp int64
 	pid       int16
 	clientPid int16
 }
@@ -103,7 +103,7 @@ func atoi(s string) int {
 }
 
 // Parse a GT.M journal extract text string into JournalRecord
-func Parse(raw string, loc *time.Location) (*JournalRecord, error) {
+func Parse(raw string) (*JournalRecord, error) {
 	// log with fields
 	logf := log.WithFields(log.Fields{"journal": raw})
 
@@ -112,7 +112,7 @@ func Parse(raw string, loc *time.Location) (*JournalRecord, error) {
 		return nil, errors.New(ErrorInvalidRecord)
 	}
 
-	ts, err := parseHorologTime(s[1], loc)
+	ts, err := Horolog2UnixTime(s[1])
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func Parse(raw string, loc *time.Location) (*JournalRecord, error) {
 }
 
 // JSON representation of a journal log entry
-func (rec *JournalRecord) JSON(loc *time.Location) (string, error) {
+func (rec *JournalRecord) JSON() (string, error) {
 	var r []string
 	var err error
 	switch rec.opcode {
@@ -201,7 +201,7 @@ func (rec *JournalRecord) JSON(loc *time.Location) (string, error) {
 		Key:            r[1],
 		Subscripts:     r[2:],
 		NodeValues:     strings.Split(rec.detail.value, "|"),
-		TimeStamp:      rec.header.timestamp.Unix(),
+		TimeStamp:      rec.header.timestamp,
 	}
 
 	bytes, err := json.Marshal(&event)
@@ -212,29 +212,47 @@ func (rec *JournalRecord) JSON(loc *time.Location) (string, error) {
 	return string(bytes), nil
 }
 
-// parse a timestamp in GT.M $HOROLOG format, ddddd,sssss format and return a time.Time
+// parse a timestamp in GT.M $HOROLOG format, ddddd,sssss format
+// returns a timestamp of int64 that is number of seconds since
+// Unix epoch time local time
 //
 // ddddd is the number of days after January 1, 1841
 // sssss is number of seconds after the midnight of the day
 //
-func parseHorologTime(horolog string, loc *time.Location) (time.Time, error) {
+// date prior to 1971/1/1 will return error
+func Horolog2UnixTime(horolog string) (int64, error) {
 	s := strings.Split(horolog, ",")
-	if len(s) != 2 {
-		return time.Unix(0, 0), errors.New(ErrorNotHorologFormat)
+	if s == nil {
+		return -1, errors.New(ErrorNotHorologFormat)
 	}
 
-	day, err1 := strconv.Atoi(s[0])
-	sec, err2 := strconv.Atoi(s[1])
-	if err1 != nil || err2 != nil ||
+	day, err := strconv.Atoi(s[0])
+	if err != nil {
+		return -1, errors.New(ErrorNotHorologFormat)
+	}
+
+	var sec int
+	if len(s) > 1 {
+		sec, err = strconv.Atoi(s[1])
+	} else {
+		sec = 0
+	}
+
+	if err != nil ||
 		day < 0 || day > 2980013 ||
 		sec < 0 || sec > 86399 {
-		return time.Unix(0, 0), errors.New(ErrorNotHorologFormat)
+		return -1, errors.New(ErrorNotHorologFormat)
 	}
 
-	horologBaseTime := time.Date(1841, 1, 1, 0, 0, 0, 0, loc)
-	seconds := day*86400 + sec
+	_, offset := time.Now().Zone()
+	// 47117 is days since 1840/1/1
+	seconds := (day-47117)*86400 + sec - offset
 
-	return horologBaseTime.Add(time.Duration(seconds) * time.Second), nil
+	if seconds < 0 {
+		return -1, errors.New(ErrorDatePriorTo1971)
+	}
+
+	return int64(seconds), nil
 }
 
 var nodeRegex *regexp.Regexp
