@@ -8,10 +8,6 @@ import (
 )
 
 func Test_Horolog2UnixTime(t *testing.T) {
-	_, tmp := time.Now().Zone()
-	offset := int64(tmp)
-	loc, _ := time.LoadLocation("Asia/Singapore")
-
 	// run the following command in GT.M to check day values
 	// write $$CDS^%H(day)
 
@@ -20,17 +16,16 @@ func Test_Horolog2UnixTime(t *testing.T) {
 	// local timezone will return an error because
 	// the timestamp value will be negative
 	// Unix system cannot handle this sort of thing
-	// 47118 should get a positive timestamp value in any timezone
-	ts, err := Horolog2UnixTime("47118")
+	ts, err := Horolog2UnixTime("47117")
 	assert.Nil(t, err)
-	assert.Equal(t, 24*3600-offset, ts)
+	assert.Equal(t, int64(0), ts)
 
-	expected, _ := time.ParseInLocation("2006-01-02 15:04:05", "2019-09-26 16:35:00", loc)
+	expected, _ := time.Parse("2006-01-02 15:04:05", "2019-09-26 16:35:00")
 	ts, err = Horolog2UnixTime("65282,59700")
 	assert.Nil(t, err)
 	assert.Equal(t, expected.Unix(), ts)
 
-	expected, _ = time.ParseInLocation("2006-01-02 15:04:05", "2019-10-04 00:24:45", loc)
+	expected, _ = time.Parse("2006-01-02 15:04:05", "2019-10-04 00:24:45")
 	ts, err = Horolog2UnixTime("65290,1485")
 	assert.Nil(t, err)
 	assert.Equal(t, expected.Unix(), ts)
@@ -69,7 +64,7 @@ func Test_JournalRecord_Json(t *testing.T) {
 		`"token_seq":28,"update_num":0,"stream_num":0,"stream_seq":0,` +
 		`"journal_seq":0,"global":"ACN","key":"1234","subscripts":["51"],` +
 		`"node_values":["300.00","61212","1","","","",""],` +
-		`"time_stamp":1569486900}`
+		`"time_stamp":1569515700}`
 
 	rec, err := Parse(`05\65282,59700\28\0\0\28\0\0\0\0\^ACN(1234,51)="300.00|61212|1||||"`)
 	assert.Nil(t, err)

@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // OpCodes mapps 2 digit code in journal log to instruction names
@@ -244,9 +243,7 @@ func Horolog2UnixTime(horolog string) (int64, error) {
 		return -1, errors.New(ErrorNotHorologFormat)
 	}
 
-	_, offset := time.Now().Zone()
-	// 47117 is days since 1840/1/1
-	seconds := (day-47117)*86400 + sec - offset
+	seconds := (day-47117)*86400 + sec
 
 	if seconds < 0 {
 		return -1, errors.New(ErrorDatePriorTo1971)
