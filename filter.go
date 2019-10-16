@@ -45,6 +45,8 @@ func LoadConfig(envFile string) *Config {
 // DoFilter is the main processing loop that
 // reads journal extract and publish messages
 func DoFilter(fin, fout *os.File) {
+	now := time.Now()
+
 	scanner := bufio.NewScanner(fin)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -53,17 +55,22 @@ func DoFilter(fin, fout *os.File) {
 		// log with fields
 		logf := log.WithField("journal", line)
 
-		rec, err := Parse(line)
+		rec, err := Parse(line, now.Location())
 		if err != nil {
 			logf.Info("Unable to parse record")
 			IncrCounter("lines_parse_error")
 		} else {
 			IncrCounter("lines_parsed")
 
-			jsonstr := rec.JSON()
+			jsonstr, err := rec.JSON(now.Location())
+			if err != nil {
+				logf.Infof("cannot marshal to JSON due to %+v", err)
+				continue
+			}
+
 			logf.Debugf("line parsed to json %s", jsonstr)
 
-			if IsKafkaAvailable() {
+			if IsKafkaAvailable() && jsonstr != "" {
 				start := time.Now()
 
 				err = PublishMessage(jsonstr)

@@ -71,7 +71,7 @@ type JournalRecord struct {
 }
 
 // JournalEvent is an event published to Kafka that
-// is assoicated to a JournalRecord
+// is associated to a JournalRecord
 type JournalEvent struct {
 	Operand         string    `json:"operand,omitempty"`
 	TransactionNum  string    `json:"transaction_num,omitempty"`
@@ -103,7 +103,7 @@ func atoi(s string) int {
 }
 
 // Parse a GT.M journal extract text string into JournalRecord
-func Parse(raw string) (*JournalRecord, error) {
+func Parse(raw string, loc *time.Location) (*JournalRecord, error) {
 	// log with fields
 	logf := log.WithFields(log.Fields{"journal": raw})
 
@@ -112,7 +112,7 @@ func Parse(raw string) (*JournalRecord, error) {
 		return nil, errors.New(ErrorInvalidRecord)
 	}
 
-	ts, err := parseHorologTime(s[1], time.Now().Location())
+	ts, err := parseHorologTime(s[1], loc)
 	if err != nil {
 		return nil, err
 	}
@@ -174,11 +174,18 @@ func Parse(raw string) (*JournalRecord, error) {
 }
 
 // JSON representation of a journal log entry
-func (rec *JournalRecord) JSON() string {
-	values := strings.Split(rec.detail.value, "|")
-	r, err := parseNodeFlags(rec.detail.nodeFlags)
-	if err != nil {
-		return ""
+func (rec *JournalRecord) JSON(loc *time.Location) (string, error) {
+	var r []string
+	var err error
+	switch rec.opcode {
+	case "SET", "KILL", "ZKILL", "ZTRIG":
+		r, err = parseNodeFlags(rec.detail.nodeFlags)
+		if err != nil {
+			return "", errors.New("unable to parse")
+		}
+	default:
+		// for other type of operands the node flags are all empty
+		r = []string{"", "", ""}
 	}
 
 	event := JournalEvent{
@@ -193,16 +200,16 @@ func (rec *JournalRecord) JSON() string {
 		Global:         r[0],
 		Key:            r[1],
 		Subscripts:     r[2:],
-		NodeValues:     values,
+		NodeValues:     strings.Split(rec.detail.value, "|"),
 		TimeStamp:      rec.header.timestamp,
 	}
 
 	bytes, err := json.Marshal(&event)
 	if err != nil {
-		return ""
+		return "", errors.New("unable to parse")
 	}
 
-	return string(bytes)
+	return string(bytes), nil
 }
 
 // parse a timestamp in GT.M $HOROLOG format, ddddd,sssss format and return a time.Time

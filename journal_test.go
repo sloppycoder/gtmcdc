@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_Parse_Horolog_DAte(t *testing.T) {
+func Test_Parse_Horolog_Date(t *testing.T) {
 	loc, err := time.LoadLocation("Asia/Singapore")
 	assert.Nil(t, err)
 
@@ -34,21 +34,25 @@ func Test_Parse_Horolog_DAte(t *testing.T) {
 }
 
 func Test_Parse_JournalRecord_1(t *testing.T) {
-	rec, _ := Parse(`05\65282,59700\28\0\0\28\0\0\0\0\^acc("00027")="300.00"`)
+	loc, err := time.LoadLocation("Asia/Singapore")
+	assert.Nil(t, err)
+
+	rec, _ := Parse(`05\65282,59700\28\0\0\28\0\0\0\0\^acc("00027")="300.00"`, loc)
 	// fmt.Println(rec)
 	assert.Equal(t, "SET", rec.opcode)
 	assert.Equal(t, "300.00", rec.detail.value)
 
 	// record is too short
-	_, err := Parse(`05\65282,59700\28`)
+	_, err = Parse(`05\65282,59700\28`, loc)
 	assert.NotNil(t, err)
 }
 
 func Test_Parse_JournalRecord_2(t *testing.T) {
-	rec, _ := Parse(`08\65287,62154\3\0\0\3\0\0`)
+	loc := time.Now().Location()
+	rec, _ := Parse(`08\65287,62154\3\0\0\3\0\0`, loc)
 	assert.Equal(t, "TSTART", rec.opcode)
 
-	rec, _ = Parse(`09\65287,58606\8\0\0\8\0\0\1\`)
+	rec, _ = Parse(`09\65287,58606\8\0\0\8\0\0\1\`, loc)
 	assert.Equal(t, "TCOM", rec.opcode)
 	assert.Equal(t, 8, rec.tran.tokenSeq)
 	assert.Equal(t, "", rec.tran.tag)
@@ -56,11 +60,21 @@ func Test_Parse_JournalRecord_2(t *testing.T) {
 }
 
 func Test_JournalRecord_Json(t *testing.T) {
-	rec, err := Parse(`05\65282,59700\28\0\0\28\0\0\0\0\^acc("00027")="300.00"`)
+	expected := `{"operand":"SET","transaction_num":"28",` +
+		`"token_seq":28,"update_num":0,"stream_num":0,"stream_seq":0,` +
+		`"journal_seq":0,"global":"ACN","key":"1234","subscripts":["51"],` +
+		`"node_values":["300.00","61212","1","","","",""],` +
+		`"time_stamp":"2019-09-27T17:39:35+08:00"}`
+
+	loc, err := time.LoadLocation("Asia/Singapore")
 	assert.Nil(t, err)
 
-	jstr := rec.JSON()
-	expected := "{\"operand\":\"SET\",\"transaction_num\":\"28\",\"token_seq\":28,\"update_num\":0,\"stream_num\":0,\"stream_seq\":0,\"journal_seq\":0,\"global\":\"acc\",\"key\":\"\\\"00027\\\"\",\"value\":[\"300.00\"],\"time_stamp\":\"2019-09-27T17:39:35+08:00\"}"
+	rec, err := Parse(`05\65282,59700\28\0\0\28\0\0\0\0\^ACN(1234,51)="300.00|61212|1||||"`, loc)
+	assert.Nil(t, err)
+
+	jstr, err := rec.JSON(loc)
+
+	assert.Nil(t, err)
 	assert.Equal(t, expected, jstr)
 }
 
@@ -94,13 +108,13 @@ func Test_parseNodeFlags(t *testing.T) {
 	assert.Equal(t, "51", r[2])
 	assert.Equal(t, "1245", r[3])
 
-	r, err = parseNodeFlags("^ACN()")
+	_, err = parseNodeFlags("^ACN()")
 	assert.NotNil(t, err)
 
-	r, err = parseNodeFlags("garbage")
+	_, err = parseNodeFlags("garbage")
 	assert.NotNil(t, err)
 
-	r, err = parseNodeFlags("")
+	_, err = parseNodeFlags("")
 	assert.NotNil(t, err)
 
 }

@@ -90,8 +90,8 @@ func Test_DoFilter_MockKafka(t *testing.T) {
 
 	// the file contains 3 records
 	// #1 is good
-	// #2 cannot be parsed
-	// #3 is a TCOM, the mock producer will fail when this
+	// #2 is a TCOM, the mock producer will fail when this
+	// #3 cannot be parsed
 	//    message is published
 	fin, fout := InitInputAndOutput("testdata/test1.txt", nullFile())
 	DoFilter(fin, fout)
