@@ -112,7 +112,7 @@ func Parse(raw string) (*JournalRecord, error) {
 		return nil, errors.New(ErrorInvalidRecord)
 	}
 
-	ts, err := Horolog2UnixTime(s[1])
+	ts, err := Horolog2UnixTime(s[1], time.Local)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (rec *JournalRecord) JSON() (string, error) {
 // sssss is number of seconds after the midnight of the day
 //
 // date prior to 1971/1/1 will return error
-func Horolog2UnixTime(horolog string) (int64, error) {
+func Horolog2UnixTime(horolog string, loc *time.Location) (int64, error) {
 	s := strings.Split(horolog, ",")
 	if s == nil {
 		return -1, errors.New(ErrorNotHorologFormat)
@@ -244,7 +244,7 @@ func Horolog2UnixTime(horolog string) (int64, error) {
 		return -1, errors.New(ErrorNotHorologFormat)
 	}
 
-	_, offset := time.Now().Zone()
+	_, offset := time.Now().In(loc).Zone()
 	// 47117 is days since 1840/1/1
 	seconds := (day-47117)*86400 + sec - offset
 
