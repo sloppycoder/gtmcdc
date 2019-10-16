@@ -64,7 +64,7 @@ func Test_JournalRecord_Json(t *testing.T) {
 		`"token_seq":28,"update_num":0,"stream_num":0,"stream_seq":0,` +
 		`"journal_seq":0,"global":"ACN","key":"1234","subscripts":["51"],` +
 		`"node_values":["300.00","61212","1","","","",""],` +
-		`"time_stamp":"2019-09-27T17:39:35+08:00"}`
+		`"time_stamp":1569577175}`
 
 	loc, err := time.LoadLocation("Asia/Singapore")
 	assert.Nil(t, err)

@@ -73,23 +73,23 @@ type JournalRecord struct {
 // JournalEvent is an event published to Kafka that
 // is associated to a JournalRecord
 type JournalEvent struct {
-	Operand         string    `json:"operand,omitempty"`
-	TransactionNum  string    `json:"transaction_num,omitempty"`
-	Token           string    `json:"token,omitempty"`
-	TokenSeq        int       `json:"token_seq"`
-	UpdateNum       int       `json:"update_num"`
-	StreamNum       int8      `json:"stream_num"`
-	StreamSeq       int       `json:"stream_seq"`
-	JournalSeq      int       `json:"journal_seq"`
-	Partners        string    `json:"partners,omitempty"`
-	TransactionTag  string    `json:"transaction_tag,omitempty"`
-	ProcessID       int16     `json:"pid,omitempty"`
-	ClientProcessID int16     `json:"client_pid,omitempty"`
-	Global          string    `json:"global,omitempty"`
-	Key             string    `json:"key,omitempty"`
-	Subscripts      []string  `json:"subscripts,omitempty"`
-	NodeValues      []string  `json:"node_values,omitempty"`
-	TimeStamp       time.Time `json:"time_stamp,omitempty"`
+	Operand         string   `json:"operand,omitempty"`
+	TransactionNum  string   `json:"transaction_num,omitempty"`
+	Token           string   `json:"token,omitempty"`
+	TokenSeq        int      `json:"token_seq"`
+	UpdateNum       int      `json:"update_num"`
+	StreamNum       int8     `json:"stream_num"`
+	StreamSeq       int      `json:"stream_seq"`
+	JournalSeq      int      `json:"journal_seq"`
+	Partners        string   `json:"partners,omitempty"`
+	TransactionTag  string   `json:"transaction_tag,omitempty"`
+	ProcessID       int16    `json:"pid,omitempty"`
+	ClientProcessID int16    `json:"client_pid,omitempty"`
+	Global          string   `json:"global,omitempty"`
+	Key             string   `json:"key,omitempty"`
+	Subscripts      []string `json:"subscripts,omitempty"`
+	NodeValues      []string `json:"node_values,omitempty"`
+	TimeStamp       int64    `json:"time_stamp,omitempty"`
 }
 
 func atoi(s string) int {
@@ -201,7 +201,7 @@ func (rec *JournalRecord) JSON(loc *time.Location) (string, error) {
 		Key:            r[1],
 		Subscripts:     r[2:],
 		NodeValues:     strings.Split(rec.detail.value, "|"),
-		TimeStamp:      rec.header.timestamp,
+		TimeStamp:      rec.header.timestamp.Unix(),
 	}
 
 	bytes, err := json.Marshal(&event)
