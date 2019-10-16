@@ -2,7 +2,6 @@ package gtmcdc
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -68,7 +67,6 @@ func Test_InitLogging(t *testing.T) {
 	bytes, err := ioutil.ReadAll(logf)
 	assert.Nil(t, err)
 
-	fmt.Printf("read:%s\n", string(bytes))
 	assert.True(t, strings.Contains(string(bytes), LogMsg))
 }
 

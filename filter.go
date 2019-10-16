@@ -101,7 +101,10 @@ func InitLogging(logFile, logLevel string) {
 	var file *os.File
 	var err error
 
-	if logFile == "stderr" || !isatty.IsTerminal(os.Stdout.Fd()) {
+	// force log to file if log is set to stderr and stdout is a tty
+	// so that the log messages doesn't mix with stdout and make a mess
+	// on the screen
+	if logFile == "stderr" && isatty.IsTerminal(os.Stdout.Fd()) {
 		logFile = "cdcfilter.log"
 	}
 
