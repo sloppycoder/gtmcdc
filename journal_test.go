@@ -43,21 +43,21 @@ func Test_Horolog2UnixTime(t *testing.T) {
 }
 
 func Test_Parse_JournalRecord_1(t *testing.T) {
-	rec, _ := Parse(`05\65282,59700\28\0\0\28\0\0\0\0\^acc("00027")="300.00"`)
+	rec, _ := Parse(`05\65282,59700\28\0\0\28\0\0\0\0\^acc("00027")="300.00"`, time.Local)
 	// fmt.Println(rec)
 	assert.Equal(t, "SET", rec.opcode)
 	assert.Equal(t, "300.00", rec.detail.value)
 
 	// record is too short
-	_, err := Parse(`05\65282,59700\28`)
+	_, err := Parse(`05\65282,59700\28`, time.Local)
 	assert.NotNil(t, err)
 }
 
 func Test_Parse_JournalRecord_2(t *testing.T) {
-	rec, _ := Parse(`08\65287,62154\3\0\0\3\0\0`)
+	rec, _ := Parse(`08\65287,62154\3\0\0\3\0\0`, time.Local)
 	assert.Equal(t, "TSTART", rec.opcode)
 
-	rec, _ = Parse(`09\65287,58606\8\0\0\8\0\0\1\`)
+	rec, _ = Parse(`09\65287,58606\8\0\0\8\0\0\1\`, time.Local)
 	assert.Equal(t, "TCOM", rec.opcode)
 	assert.Equal(t, 8, rec.tran.tokenSeq)
 	assert.Equal(t, "", rec.tran.tag)
@@ -71,7 +71,7 @@ func Test_JournalRecord_Json(t *testing.T) {
 		`"node_values":["300.00","61212","1","","","",""],` +
 		`"time_stamp":1569486900}`
 
-	rec, err := Parse(`05\65282,59700\28\0\0\28\0\0\0\0\^ACN(1234,51)="300.00|61212|1||||"`)
+	rec, err := Parse(`05\65282,59700\28\0\0\28\0\0\0\0\^ACN(1234,51)="300.00|61212|1||||"`, time.Local)
 	assert.Nil(t, err)
 
 	jayson, err := rec.JSON()

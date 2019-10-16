@@ -103,7 +103,7 @@ func atoi(s string) int {
 }
 
 // Parse a GT.M journal extract text string into JournalRecord
-func Parse(raw string) (*JournalRecord, error) {
+func Parse(raw string, loc *time.Location) (*JournalRecord, error) {
 	// log with fields
 	logf := log.WithFields(log.Fields{"journal": raw})
 
@@ -112,7 +112,7 @@ func Parse(raw string) (*JournalRecord, error) {
 		return nil, errors.New(ErrorInvalidRecord)
 	}
 
-	ts, err := Horolog2Timestamp(s[1], time.Local)
+	ts, err := Horolog2Timestamp(s[1], loc)
 	if err != nil {
 		return nil, err
 	}

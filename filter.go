@@ -53,7 +53,7 @@ func DoFilter(fin, fout *os.File) {
 		// log with fields
 		logf := log.WithField("journal", line)
 
-		rec, err := Parse(line)
+		rec, err := Parse(line, time.Local)
 		if err != nil {
 			logf.Info("Unable to parse record")
 			IncrCounter("lines_parse_error")
