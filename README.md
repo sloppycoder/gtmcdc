@@ -1,4 +1,4 @@
-## GT.M/YottaDB Replication Filter 
+## GT.M/YottaDB Replication Filter
 
 A GT.M/YottaDB change event capture (CDC) mechansm by using a replication filter that convert M instructions into Kafka messages for the purpose of propagating change event to external systems.
 
@@ -7,24 +7,40 @@ The code here is just a skeleton. A lot more business logic needs to be implemen
 The scripts in [scripts/original_from_ydb_doc](scripts/original_from_ydb_doc) directory are copied from [YottaDB documentation](https://gitlab.com/YottaDB/DB/YDBDoc/tree/master/AdminOpsGuide/repl_procedures). Shout out to the great work by [YottaDB team](https://yottadb.com/)
 
 ### System Requirements
+
 Tested with:
+
 1. [Ubuntu 18.04](http://releases.ubuntu.com/18.04/)
 2. [YottaDB r1.28](https://yottadb.com/product/get-started/)
 3. [Go 1.13](https://golang.org/dl/)
+4. [Confluent Platform 5.3](https://www.confluent.io/download/)
+5. [MongoDB server](https://www.mongodb.com/download-center/community)
+6. [MongoDB Kafka connector](https://www.confluent.io/hub/mongodb/kafka-connect-mongodb)
 
 ### Build
+
 ```
 go build ./cmd/cdcfilter
 
 ```
 
+### Setup the environment
+
+1. Install Confluent Platform along with confluent cli. Set environment variable CONFLUENT_HOME to the installation directory.
+2. Install MongoDB kafka sink compoent from ConfluentHub.
+3. Install MongoDB server
+4. Create a user dev with password dev, by running the script below using mongo shell
+
 ### Test cdcfilter using Journal file without YottaDB setup
+
 You should probably start here.
 
 Install and set the prerequisites.
+
 1. MongoDB 4.2 Community Edition
 2. Confluent Platform or Community edition
 3. Setup a user dev with password dev who owns the dev database, using something like below
+
 ```
 use dev
 db.createUser(
@@ -42,7 +58,7 @@ The follow the steps to setup KSQL streams and Sink in Kafka.
 ```
 
 # install confluent kafka and confluent CLI, set the $CONFLUENT_HOME environment variable.
-# if you install using the RPM or DEB file, the kafka utilities are in your PATH, so the $CONFLUENT_HOME/bin 
+# if you install using the RPM or DEB file, the kafka utilities are in your PATH, so the $CONFLUENT_HOME/bin
 # below can be omitted
 
 # startup confluent platform
@@ -79,20 +95,20 @@ mongo -u dev -p dev dev
 
 ### Test with YottaDB replication setup
 
-First, [install YottaDB](https://yottadb.com/product/get-started/), then follow the steps below to create source database A and target database B, start the replicating processes.
+Install [YottaDB](https://yottadb.com/product/get-started/), then follow the steps below to create source database A and target database B, start the replicating processes.
 
 ```
 cd scripts/ydb
 
-# setup 2 databases, A and B 
+# setup 2 databases, A and B
 ./dbinit A
 ./dbinit B
 
-# start replication processes 
+# start replication processes
 ./repl_start A B
 
 # check replication filter log
-# the log should show the filter started with no errors 
+# the log should show the filter started with no errors
 tail -f cdcfilter.log
 
 
@@ -118,6 +134,7 @@ vi A/acc.m
 ```
 
 To tear down the setup and cleanup everything
+
 ```
 ./repl_stop
 
@@ -125,4 +142,3 @@ To tear down the setup and cleanup everything
 rm -rf A B cdcfilter.log
 
 ```
-
