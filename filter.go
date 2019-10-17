@@ -44,11 +44,11 @@ func LoadConfig(envFile string) *Config {
 
 // DoFilter is the main processing loop that
 // reads journal extract and publish messages
-func DoFilter(fin, fout *os.File, producer *Producer) {
+func DoFilter(fin, fout *os.File, producer *Producer, metrics *Metrics) {
 	scanner := bufio.NewScanner(fin)
 	for scanner.Scan() {
 		line := scanner.Text()
-		IncrCounter("lines_read_from_input")
+		metrics.IncrCounter("lines_read_from_input")
 
 		// log with fields
 		logf := log.WithField("journal", line)
@@ -56,9 +56,9 @@ func DoFilter(fin, fout *os.File, producer *Producer) {
 		rec, err := Parse(line)
 		if err != nil {
 			logf.Info("Unable to parse record")
-			IncrCounter("lines_parse_error")
+			metrics.IncrCounter("lines_parse_error")
 		} else {
-			IncrCounter("lines_parsed")
+			metrics.IncrCounter("lines_parsed")
 
 			jsonstr, err := rec.JSON()
 			if err != nil {
@@ -74,21 +74,21 @@ func DoFilter(fin, fout *os.File, producer *Producer) {
 				err = producer.PublishMessage(jsonstr)
 				if err != nil {
 					logf.Warnf("Unable to publish message for journal record. %+v", err)
-					IncrCounter("lines_parsed_but_not_published")
+					metrics.IncrCounter("lines_parsed_but_not_published")
 				} else {
-					IncrCounter("lines_parsed_and_published")
+					metrics.IncrCounter("lines_parsed_and_published")
 					elapsed := time.Since(start)
-					HistoObserve("message_publish_to_kafka", float64(elapsed/time.Microsecond))
+					metrics.HistoObserve("message_publish_to_kafka", float64(elapsed/time.Microsecond))
 				}
 			}
 
 			// send to output only after a message is successfully published
 			_, err = fmt.Fprintln(fout, line)
 			if err != nil {
-				IncrCounter("lines_output_write_error")
+				metrics.IncrCounter("lines_output_write_error")
 				logf.Infof("Unable to write to output")
 			} else {
-				IncrCounter("lines_output_written")
+				metrics.IncrCounter("lines_output_written")
 			}
 		}
 	}

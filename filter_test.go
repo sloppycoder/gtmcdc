@@ -89,7 +89,8 @@ func Test_DoFilter_MockKafka(t *testing.T) {
 		"lines_parsed_but_not_published",
 	}
 
-	prevValues := getCounters(counters)
+	metrics := InitMetrics()
+	prevValues := getCounters(metrics, counters)
 
 	// the file contains 3 records
 	// #1 is good
@@ -97,9 +98,9 @@ func Test_DoFilter_MockKafka(t *testing.T) {
 	// #3 cannot be parsed
 	//    message is published
 	fin, fout := InitInputAndOutput("testdata/test1.txt", nullFile())
-	DoFilter(fin, fout, producer)
+	DoFilter(fin, fout, producer, metrics)
 
-	currentValues := getCounters(counters)
+	currentValues := getCounters(metrics, counters)
 	deltas, err := deltaCounters(prevValues, currentValues)
 
 	assert.Nil(t, err)
@@ -107,10 +108,10 @@ func Test_DoFilter_MockKafka(t *testing.T) {
 	assert.ElementsMatch(t, expected, deltas)
 }
 
-func getCounters(counterNames []string) []float64 {
+func getCounters(metrics *Metrics, counterNames []string) []float64 {
 	values := make([]float64, len(counterNames))
 	for i, name := range counterNames {
-		values[i] = GetCounterValue(name)
+		values[i] = metrics.GetCounterValue(name)
 	}
 
 	return values

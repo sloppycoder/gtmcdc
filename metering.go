@@ -9,13 +9,15 @@ import (
 	dto "github.com/prometheus/client_model/go"
 )
 
-var counters map[string]prometheus.Counter
-var histograms map[string]prometheus.Histogram
+type Metrics struct {
+	counters   map[string]prometheus.Counter
+	histograms map[string]prometheus.Histogram
+}
 
 // GetCounterValue returns the value of a counter
 // A new counter will be created if it does not exist already
-func GetCounterValue(name string) float64 {
-	counter, exists := counters[name]
+func (m *Metrics) GetCounterValue(name string) float64 {
+	counter, exists := m.counters[name]
 	if !exists {
 		return 0
 	}
@@ -27,17 +29,13 @@ func GetCounterValue(name string) float64 {
 
 // IncrCounter increment a counter
 // A new counter will be created if it does not exist already
-func IncrCounter(name string) {
-	if counters == nil {
-		counters = map[string]prometheus.Counter{}
-	}
-
-	counter, exists := counters[name]
+func (m *Metrics) IncrCounter(name string) {
+	counter, exists := m.counters[name]
 	if !exists {
 		counter = promauto.NewCounter(prometheus.CounterOpts{
 			Name: name,
 		})
-		counters[name] = counter
+		m.counters[name] = counter
 	}
 
 	counter.Inc()
@@ -45,19 +43,15 @@ func IncrCounter(name string) {
 
 // HistoObserve records an obseration for a histogram
 // A new histogram will be created if it does not exist already
-func HistoObserve(name string, value float64) {
-	if histograms == nil {
-		histograms = map[string]prometheus.Histogram{}
-	}
-
-	histo, exists := histograms[name]
+func (m *Metrics) HistoObserve(name string, value float64) {
+	histo, exists := m.histograms[name]
 	if !exists {
 		histo = promauto.NewHistogram(prometheus.HistogramOpts{
 			Name: name,
 			// used to store microseconds
 			Buckets: []float64{100, 250, 500, 1_000, 2_500, 5_000, 10_000, 25_000, 50_000, 100_000, 2_500_000},
 		})
-		histograms[name] = histo
+		m.histograms[name] = histo
 	}
 	histo.Observe(value)
 }
@@ -73,4 +67,11 @@ func InitPromHTTP(addr string) error {
 	}()
 
 	return err
+}
+
+func InitMetrics() *Metrics {
+	return &Metrics{
+		counters:   map[string]prometheus.Counter{},
+		histograms: map[string]prometheus.Histogram{},
+	}
 }

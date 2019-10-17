@@ -44,7 +44,8 @@ func main() {
 	defer closeFile(fin)
 	defer closeFile(fout)
 
-	pkg.DoFilter(fin, fout, producer)
+	metrics := pkg.InitMetrics()
+	pkg.DoFilter(fin, fout, producer, metrics)
 
 	log.Info("done")
 }
