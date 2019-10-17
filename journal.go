@@ -3,29 +3,12 @@ package gtmcdc
 import (
 	"encoding/json"
 	"errors"
-	log "github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
 	"strings"
-)
 
-// OpCodes mapps 2 digit code in journal log to instruction names
-var OpCodes = map[string]string{
-	"00": "NULL",
-	"01": "PINI",
-	"02": "PFIN",
-	"03": "EOF",
-	"04": "KILL",
-	"05": "SET",
-	"06": "ZTSTART",
-	"07": "ZTCOM",
-	"08": "TSTART",
-	"09": "TCOM",
-	"10": "ZKILL",
-	"11": "ZTWORM",
-	"12": "ZTRIG",
-	"13": "LGTRIG",
-}
+	log "github.com/sirupsen/logrus"
+)
 
 // Error Messages
 const (
@@ -41,7 +24,7 @@ type header struct {
 }
 
 type repl struct {
-	streamNum  int8
+	streamNum  int
 	streamSeq  int
 	journalSeq int
 }
@@ -77,7 +60,7 @@ type JournalEvent struct {
 	Token           string   `json:"token,omitempty"`
 	TokenSeq        int      `json:"token_seq"`
 	UpdateNum       int      `json:"update_num"`
-	StreamNum       int8     `json:"stream_num"`
+	StreamNum       int      `json:"stream_num"`
 	StreamSeq       int      `json:"stream_seq"`
 	JournalSeq      int      `json:"journal_seq"`
 	Partners        string   `json:"partners,omitempty"`
@@ -101,7 +84,53 @@ func atoi(s string) int {
 	return i
 }
 
+// given 2 digits numeric and return the operand name
+func OpCode(numeric string) string {
+	var codes map[string]string
+	func() {
+		if codes == nil {
+			codes = map[string]string{
+				"00": "NULL",
+				"01": "PINI",
+				"02": "PFIN",
+				"03": "EOF",
+				"04": "KILL",
+				"05": "SET",
+				"06": "ZTSTART",
+				"07": "ZTCOM",
+				"08": "TSTART",
+				"09": "TCOM",
+				"10": "ZKILL",
+				"11": "ZTWORM",
+				"12": "ZTRIG",
+				"13": "LGTRIG",
+			}
+		}
+	}()
+
+	if operand, ok := codes[numeric]; ok {
+		return operand
+	}
+
+	return ""
+}
+
 // Parse a GT.M journal extract text string into JournalRecord
+// an journal extract entry is
+// NULL    = "00"\time\tnum\pid\clntpid\jsnum\strm_num\strm_seq\salvaged
+// PINI    = "01"\time\tnum\pid\nnam\unam\term\clntpid\clntnnam\clntunam\clntterm
+// PFIN    = "02"\time\tnum\pid\clntpid
+// EOF     = "03"\time\tnum\pid\clntpid\jsnum
+// KILL    = "04"\time\tnum\pid\clntpid\token_seq\strm_num\strm_seq\updnum\nodeflags\node
+// SET     = "05"\time\tnum\pid\clntpid\token_seq\strm_num\strm_seq\updnum\nodeflags\node=sarg
+// ZTSTART = "06"\time\tnum\pid\clntpid\token
+// ZTCOM   = "07"\time\tnum\pid\clntpid\token\partners
+// TSTART  = "08"\time\tnum\pid\clntpid\token_seq\strm_num\strm_seq
+// TCOM    = "09"\time\tnum\pid\clntpid\token_seq\strm_num\strm_seq\partners\tid
+// ZKILL   = "10"\time\tnum\pid\clntpid\token_seq\strm_num\strm_seq\updnum\nodeflags\node
+// ZTWORM  = "11"\time\tnum\pid\clntpid\token_seq\strm_num\strm_seq\updnum\ztwormhole
+// ZTRIG   = "12"\time\tnum\pid\clntpid\token_seq\strm_num\strm_seq\updnum\nodeflags\node
+// LGTRIG  = "13"\time\tnum\pid\clntpid\token_seq\strm_num\strm_seq\updnum\trigdefinition
 func Parse(raw string) (*JournalRecord, error) {
 	// log with fields
 	logf := log.WithFields(log.Fields{"journal": raw})
@@ -117,7 +146,7 @@ func Parse(raw string) (*JournalRecord, error) {
 	}
 
 	rec := JournalRecord{
-		opcode: OpCodes[s[0]],
+		opcode: OpCode(s[0]),
 		header: header{},
 		repl:   repl{},
 		tran:   transaction{},
@@ -128,7 +157,7 @@ func Parse(raw string) (*JournalRecord, error) {
 	rec.header.timestamp = ts
 	rec.tran.num = s[2]
 
-	if OpCodes[s[0]] == "PINI" && len(s) >= 8 {
+	if OpCode(s[0]) == "PINI" && len(s) >= 8 {
 		rec.header.clientPid = int16(atoi(s[7]))
 	} else {
 		rec.header.clientPid = int16(atoi(s[4]))
@@ -140,7 +169,7 @@ func Parse(raw string) (*JournalRecord, error) {
 
 	case "SET", "KILL", "ZKILL", "ZTRIG":
 		rec.tran.tokenSeq, rec.tran.updateNum = atoi(s[5]), atoi(s[8])
-		rec.repl.streamNum, rec.repl.streamSeq = int8(atoi(s[6])), atoi(s[7])
+		rec.repl.streamNum, rec.repl.streamSeq = atoi(s[6]), atoi(s[7])
 
 		s2 := strings.Split(s[len(s)-1], "=")
 		rec.detail.nodeFlags = s2[0]
@@ -155,7 +184,7 @@ func Parse(raw string) (*JournalRecord, error) {
 
 	case "TSTART", "TCOM":
 		rec.tran.tokenSeq = atoi(s[5])
-		rec.repl.streamNum, rec.repl.streamSeq = int8(atoi(s[6])), atoi(s[7])
+		rec.repl.streamNum, rec.repl.streamSeq = atoi(s[6]), atoi(s[7])
 		if rec.opcode == "TCOM" {
 			// must be TCOM
 			rec.tran.partners = s[8]
@@ -252,12 +281,13 @@ func Horolog2Timestamp(horolog string) (int64, error) {
 	return int64(seconds), nil
 }
 
-var nodeRegex *regexp.Regexp
-
 func parseNodeFlags(node string) ([]string, error) {
-	if nodeRegex == nil {
-		nodeRegex = regexp.MustCompile(`\^(?P<global>.*?)\((?P<index>.+)\)`)
-	}
+	var nodeRegex *regexp.Regexp
+	func() {
+		if nodeRegex == nil {
+			nodeRegex = regexp.MustCompile(`\^(?P<global>.*?)\((?P<index>.+)\)`)
+		}
+	}()
 
 	m := nodeRegex.FindStringSubmatch(node)
 	if m == nil || len(m) < 2 {

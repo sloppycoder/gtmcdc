@@ -3,11 +3,6 @@ run:
   tests: true
 
 linters:
-  enable:
-    - megacheck
-    - govet
-    - gocritic
-
-  disable-all: false
+  enable-all: true
 
 # sample from https://github.com/golangci/golangci-lint/blob/master/.golangci.example.yml

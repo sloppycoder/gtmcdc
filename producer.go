@@ -2,9 +2,10 @@ package gtmcdc
 
 import (
 	"errors"
+	"strings"
+
 	"github.com/Shopify/sarama"
 	log "github.com/sirupsen/logrus"
-	"strings"
 )
 
 var cdcProducer sarama.SyncProducer
