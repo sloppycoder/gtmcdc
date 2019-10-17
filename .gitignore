@@ -11,3 +11,6 @@ repl_procedures/B/
 
 # binaries
 cdcfilter
+
+# misc test files
+*.out
