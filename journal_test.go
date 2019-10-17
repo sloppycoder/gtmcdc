@@ -20,6 +20,11 @@ func Test_Horolog2UnixTime(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, int64(0), ts)
 
+	// this is a special case. GTM V6.3 sends this
+	_, err = Horolog2Timestamp("0,0")
+	assert.Nil(t, err)
+	assert.Equal(t, int64(0), ts)
+
 	expected, _ := time.Parse("2006-01-02 15:04:05", "2019-09-26 16:35:00")
 	ts, err = Horolog2Timestamp("65282,59700")
 	assert.Nil(t, err)
@@ -29,9 +34,6 @@ func Test_Horolog2UnixTime(t *testing.T) {
 	ts, err = Horolog2Timestamp("65290,1485")
 	assert.Nil(t, err)
 	assert.Equal(t, expected.Unix(), ts)
-
-	_, err = Horolog2Timestamp(",")
-	assert.NotNil(t, err)
 
 	_, err = Horolog2Timestamp("29800130,1234")
 	assert.NotNil(t, err)

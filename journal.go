@@ -250,6 +250,13 @@ func (rec *JournalRecord) JSON() (string, error) {
 // no timezone is used here
 // date prior to 1971/1/1 will return error
 func Horolog2Timestamp(horolog string) (int64, error) {
+	// GTM 6.3 will send 0,0 during replication
+	// for some reason YottaDB doesn't
+	// just return 0 in this case
+	if horolog == "" || horolog == "," || horolog == "0" || horolog == "0,0" {
+		return int64(0), nil
+	}
+
 	s := strings.Split(horolog, ",")
 	if s == nil {
 		return -1, errors.New(ErrorNotHorologFormat)
