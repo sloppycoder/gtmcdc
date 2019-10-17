@@ -11,11 +11,12 @@ The scripts in [scripts/original_from_ydb_doc](scripts/original_from_ydb_doc) di
 Tested with:
 
 1. [Ubuntu 18.04](http://releases.ubuntu.com/18.04/)
-2. [YottaDB r1.28](https://yottadb.com/product/get-started/)
-3. [Go 1.13](https://golang.org/dl/)
-4. [Confluent Platform 5.3](https://www.confluent.io/download/)
-5. [MongoDB server](https://www.mongodb.com/download-center/community)
-6. [MongoDB Kafka connector](https://www.confluent.io/hub/mongodb/kafka-connect-mongodb)
+2. [Go 1.13](https://golang.org/dl/)
+3. [Confluent Platform 5.3](https://www.confluent.io/download/)
+4. [MongoDB server](https://www.mongodb.com/download-center/community)
+5. [MongoDB Kafka connector](https://www.confluent.io/hub/mongodb/kafka-connect-mongodb)
+6. [YottaDB r1.28](https://yottadb.com/product/get-started/)
+7. [FIS GT.M](https://en.wikipedia.org/wiki/GT.M)
 
 ### Build
 
@@ -93,12 +94,15 @@ mongo -u dev -p dev dev
 
 ```
 
-### Test with YottaDB replication setup
+### Test with YottaDB or GT.M replication setup
 
-Install [YottaDB](https://yottadb.com/product/get-started/), then follow the steps below to create source database A and target database B, start the replicating processes.
+Install GT.M by running the ```apt install fis-gtm``` or [YottaDB](https://yottadb.com/product/get-started/).
+Then follow the steps below to create source database A and target database B, start the replicating processes.
 
 ```
-cd scripts/ydb
+cd scripts/ydb 
+# or 
+cd scripts/gtm
 
 # setup 2 databases, A and B
 ./dbinit A
@@ -121,14 +125,14 @@ Run the acc.m script to write data to YottaDB site A, the replication filter sho
 ```
 # copy test data
 cp acc.m A/.
-/usr/local/lib/yottadb/r128/mumps -r acc
+$gtm_dist/mumps -r acc
 
 # open mongo shell and check data db.accounts.find()
 
 # edit the test data
 vi A/acc.m
 # save data, and run the updated program
-/usr/local/lib/yottadb/r128/mumps -r acc
+$gtm_dist/mumps -r acc
 
 
 ```

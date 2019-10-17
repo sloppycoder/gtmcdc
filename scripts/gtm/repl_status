@@ -1,0 +1,25 @@
+#!/bin/bash 
+
+if [ "$1" = "" ]; then
+  echo Must specify source database name
+  exit 1
+fi
+
+if [ "$2" = "" ]; then
+  echo Must specify target database name
+  exit 1
+fi
+
+echo "-----------------------------------------------------------------"
+echo "Source Server $gtm_repl_instname: "
+echo "-----------------------------------------------------------------"
+. ./gtmenv $1
+$gtm_dist/mupip replicate -source -check
+$gtm_dist/mupip replicate -source -showbacklog 
+
+echo "-----------------------------------------------------------------"
+echo "Receiver Server $gtm_repl_instname: "
+echo "-----------------------------------------------------------------"
+. ./gtmenv $2
+$gtm_dist/mupip replicate -receive -check
+$gtm_dist/mupip replicate -rece -showbacklog

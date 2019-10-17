@@ -1,0 +1,10 @@
+export gtm_dist=/usr/lib/x86_64-linux-gnu/fis-gtm/V6.3-000A_x86_64
+export gtm_repl_instname=$1
+export gtm_repl_instance=$PWD/$gtm_repl_instname/gtm.repl
+export gtmgbldir=$PWD/$gtm_repl_instname/gtm.gld
+export gtm_principal_editing=EDITING
+export gtmroutines="$PWD/$gtm_repl_instname $gtm_dist/libgtmutil.so $gtm_dist"
+export LD_LIBRARY_PATH=/usr/local/lib
+export gtm_tmp=/tmp/fis-gtm/V6.3-000A_x86_64
+export gtm_log=/tmp/fis-gtm/V6.3-000A_x86_64
+

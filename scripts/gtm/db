@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ "$1" = "" ]; then
+  echo Must specify database name
+  exit 1
+fi
+
+. ./gtmenv $1
+/usr/lib/x86_64-linux-gnu/fis-gtm/V6.3-000A_x86_64/gtm

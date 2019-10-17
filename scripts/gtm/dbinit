@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [ "$1" = "" ]; then
+  echo Must specify database name
+  exit 1
+fi
+
+. ./gtmenv $1
+
+# copied from db_create
+mkdir -p $PWD/$gtm_repl_instname/
+$gtm_dist/mumps -r ^GDE @gdemsr
+$gtm_dist/mupip create
+
+# copied from repl_setup
+$gtm_dist/mupip set -replication=on -region "*"
+$gtm_dist/mupip replic -instance_create -noreplace

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if [ "$1" = "" ]; then
+  echo Must specify source database name
+  exit 1
+fi
+
+if [ "$2" = "" ]; then
+  echo Must specify target database name
+  exit 1
+fi
+
+# stop sender at source site
+. ./gtmenv $1
+$gtm_dist/mupip replicate -source -shutdown -timeout=2    #Shut down the originating Source Server
+$gtm_dist/mupip rundown -region "*"                       #Perform database rundown
+
+# start receiver at target site
+. ./gtmenv $2
+$gtm_dist/mupip replicate -receiver -shutdown -timeout=2   #Shut down the Receiver Server
+$gtm_dist/mupip replicate -source -shutdown -timeout=2     #Shut down the passive Source Server
+
+ps -fu `whoami` | grep mupip
