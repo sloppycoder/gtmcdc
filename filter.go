@@ -44,7 +44,7 @@ func LoadConfig(envFile string) *Config {
 
 // DoFilter is the main processing loop that
 // reads journal extract and publish messages
-func DoFilter(fin, fout *os.File) {
+func DoFilter(fin, fout *os.File, producer *Producer) {
 	scanner := bufio.NewScanner(fin)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -68,10 +68,10 @@ func DoFilter(fin, fout *os.File) {
 
 			logf.Debugf("line parsed to json %s", jsonstr)
 
-			if IsKafkaAvailable() && jsonstr != "" {
+			if producer.IsKafkaAvailable() && jsonstr != "" {
 				start := time.Now()
 
-				err = PublishMessage(jsonstr)
+				err = producer.PublishMessage(jsonstr)
 				if err != nil {
 					logf.Warnf("Unable to publish message for journal record. %+v", err)
 					IncrCounter("lines_parsed_but_not_published")

@@ -27,11 +27,11 @@ func main() {
 	log.Infof("Starting cdcfilter with conf=%s, i=%s, o=%s, %+v",
 		envFile, inputFile, outputFile, conf)
 
-	err := pkg.InitProducer(conf.KafkaBrokerList, conf.KafkaTopic)
+	producer, err := pkg.InitProducer(conf.KafkaBrokerList, conf.KafkaTopic)
 	if err != nil {
 		log.Infof("Kafka producer not available. %v", err)
 	}
-	defer pkg.CleanupProducer()
+	defer producer.CleanupProducer()
 
 	if conf.PromHTTPAddr != "off" {
 		err = pkg.InitPromHTTP(conf.PromHTTPAddr)
@@ -44,7 +44,7 @@ func main() {
 	defer closeFile(fin)
 	defer closeFile(fout)
 
-	pkg.DoFilter(fin, fout)
+	pkg.DoFilter(fin, fout, producer)
 
 	log.Info("done")
 }

@@ -72,11 +72,14 @@ func Test_InitLogging(t *testing.T) {
 
 func Test_DoFilter_MockKafka(t *testing.T) {
 	sp := mocks.NewSyncProducer(t, nil)
-	defer CleanupProducer()
+	producer := &Producer{
+		syncProducer: sp,
+		topic:        "does_not_matter",
+	}
+	defer producer.CleanupProducer()
 
 	sp.ExpectSendMessageAndSucceed()
 	sp.ExpectSendMessageAndFail(errors.New("send message failed"))
-	SetProducer(sp)
 
 	counters := []string{
 		"lines_read_from_input",
@@ -94,7 +97,7 @@ func Test_DoFilter_MockKafka(t *testing.T) {
 	// #3 cannot be parsed
 	//    message is published
 	fin, fout := InitInputAndOutput("testdata/test1.txt", nullFile())
-	DoFilter(fin, fout)
+	DoFilter(fin, fout, producer)
 
 	currentValues := getCounters(counters)
 	deltas, err := deltaCounters(prevValues, currentValues)

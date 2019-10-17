@@ -8,23 +8,25 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var cdcProducer sarama.SyncProducer
-var cdcTopic string
+type Producer struct {
+	syncProducer sarama.SyncProducer
+	topic        string
+}
 
-func CleanupProducer() {
-	if cdcProducer != nil {
+func (p *Producer) CleanupProducer() {
+	if p != nil && p.syncProducer != nil {
 		log.Debug("cleanup producer")
-		_ = cdcProducer.Close()
+		_ = p.syncProducer.Close()
 	}
 }
 
-func PublishMessage(message string) error {
-	if cdcProducer == nil {
+func (p *Producer) PublishMessage(message string) error {
+	if p.syncProducer == nil {
 		return errors.New("producer not available")
 	}
 
-	_, _, err := cdcProducer.SendMessage(&sarama.ProducerMessage{
-		Topic: cdcTopic,
+	_, _, err := p.syncProducer.SendMessage(&sarama.ProducerMessage{
+		Topic: p.topic,
 		Value: sarama.StringEncoder(message),
 	})
 
@@ -36,10 +38,10 @@ func PublishMessage(message string) error {
 	return nil
 }
 
-func InitProducer(brokers, topic string) error {
+func InitProducer(brokers, topic string) (*Producer, error) {
 	brokerList := strings.Split(brokers, ",")
 	if len(brokerList) < 1 || brokerList[0] == "off" || topic == "" {
-		return errors.New("invalid kafka broker list or topic specified")
+		return nil, errors.New("invalid kafka broker list or topic specified")
 	}
 
 	config := sarama.NewConfig()
@@ -52,22 +54,20 @@ func InitProducer(brokers, topic string) error {
 	// stronger consistency guarantees:
 	// - For your broker, set `unclean.leader.election.enable` to false
 	// - For the topic, you could increase `min.insync.replicas`.
-	producer, err := sarama.NewSyncProducer(brokerList, config)
+	syncProducer, err := sarama.NewSyncProducer(brokerList, config)
 	if err != nil {
 		log.Errorln("Failed to start Sarama producer:", err)
-		return err
+		return nil, err
 	}
 
-	cdcTopic = topic
-	SetProducer(producer)
+	producer := &Producer{
+		syncProducer: syncProducer,
+		topic:        topic,
+	}
 
-	return nil
+	return producer, nil
 }
 
-func SetProducer(producer sarama.SyncProducer) {
-	cdcProducer = producer
-}
-
-func IsKafkaAvailable() bool {
-	return cdcProducer != nil
+func (p *Producer) IsKafkaAvailable() bool {
+	return p != nil && p.syncProducer != nil
 }
