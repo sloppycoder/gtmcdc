@@ -4,7 +4,7 @@ A GT.M/YottaDB change event capture (CDC) mechansm by using a replication filter
 
 The code here is just a skeleton. A lot more business logic needs to be implemented before it can be useful.
 
-The scripts in [repl_procedures](repl_procedures) directory are copied from [YottaDB documentation](https://gitlab.com/YottaDB/DB/YDBDoc/tree/master/AdminOpsGuide/repl_procedures). Shout out to the great work by [YottaDB team](https://yottadb.com/)
+The scripts in [scripts/original_from_ydb_doc](scripts/original_from_ydb_doc) directory are copied from [YottaDB documentation](https://gitlab.com/YottaDB/DB/YDBDoc/tree/master/AdminOpsGuide/repl_procedures). Shout out to the great work by [YottaDB team](https://yottadb.com/)
 
 ### System Requirements
 Tested with:
